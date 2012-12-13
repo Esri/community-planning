@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<!--
+////////////////////////////////////////////////////////////////////////////////
+//
+// Read more about ArcGIS Viewer for Flex - http://links.esri.com/flexviewer
+//
+////////////////////////////////////////////////////////////////////////////////
+-->
+<configuration>
+    <title>Community Planning</title>
+    <subtitle>Your plan for a sustainable community</subtitle>
+    <logo>assets/images/PL_logo.png</logo>
+    <style>
+        <colors>0xFFFFFF,0x333333,0x101010,0x000000,0xFFD700</colors>
+        <alpha>0.8</alpha>
+    </style>
+    <!-- replace the following url with your own geometryservice -->
+    <geometryservice url="http://localgovtemplates.esri.com/ArcGIS/rest/services/Geometry/GeometryServer" />
+
+    <!-- UI elements -->
+    <splashpage label="ArcGIS Viewer for Flex" config="widgets/Splash/CP_SplashWidget.xml" url="widgets/Splash/SplashWidget.swf"/>
+    <widget left="10"  top="50"    config="widgets/Navigation/PL_NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf"/>
+    <widget right="20" top="55"    config="widgets/MapSwitcher/MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf"/>
+    <widget left="0"   top="0"     config="widgets/HeaderController/PL_HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/>
+
+    <map wraparound180="true" initialextent="-9816892 5124514 -9812592 5127381" fullextent="-9816892 5124514 -9812592 5127381" top="40" addarcgisbasemaps="false">
+
+      <basemaps>
+        <layer label="Parcel" type="tiled" visible="true" alpha="1"
+               url="http://localgovtemplates.esri.com/ArcGIS/rest/services/ParcelPublicAccess/MapServer"/>
+        <layer label="Imagery" type="tiled" visible="false" alpha="1"
+               url="http://localgovtemplates.esri.com/ArcGIS/rest/services/ImageryHybrid/MapServer"/>
+      </basemaps>
+    </map>
+
+    <!-- widgets organized into widget containers that manage close/open etc -->
+    <!-- supported layout property options: horizontal(default)|float|vertical|fix-->
+
+      <widgetcontainer layout="float">
+
+        <widget label="Create My Plan"
+                left="100" top="50" preload="open"
+                icon="widgets/CommunityPlanning/assets/images/MyPlan.png"
+                config="widgets/CommunityPlanning/CommunityPlanningWidget.xml"
+                url="widgets/CommunityPlanning/CommunityPlanningWidget.swf"/>
+
+        <widget label="Community Impact" right="20" top="85"
+                icon="widgets/CommunityImpact/assets/images/Pie.png"
+                config="widgets/CommunityImpact/CommunityImpactWidget.xml"
+                url="widgets/CommunityImpact/CommunityImpactWidget.swf"/>
+
+        <widget label="Review My Plan"
+                left="100" top="405"
+                icon="widgets/ReviewPlan/assets/images/Review.png"
+                config="widgets/ReviewPlan/ReviewPlanWidget.xml"
+                url="widgets/ReviewPlan/ReviewPlanWidget.swf"/>
+
+        <widget label="Share My Plan"
+                right="20" top="80"
+                config="widgets/SharePlan/SharePlanWidget.xml"
+                icon="widgets/SharePlan/assets/images/Share.png"
+                url="widgets/SharePlan/SharePlanWidget.swf"/>
+      </widgetcontainer>
+
+</configuration>

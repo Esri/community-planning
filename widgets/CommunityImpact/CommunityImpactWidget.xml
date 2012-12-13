@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration>
+	<!--
+		Details of attributes whose data is to be displayed.
+		name is actual name of attribute as it is stored on feature server.
+		alias is Name of attribute that is displayed in drop down box.
+		unit is unit shown below pie chart.
+	-->
+	<featureattributes>
+		<featureattribute name="TOTAREA" alias="Total Area" unit="Acres" />
+        <featureattribute name="TOTIMPCOV" alias="Total Impervious Coverage" unit="Acres" />
+        <featureattribute name="TOTEFFRAIN" alias="Total Effective Rainfall" unit="Effective Rainfall per Acre" />
+        <featureattribute name="TOTDWELLUN" alias="Total Dwelling Units" unit="Units per Acre" />
+        <featureattribute name="TOTPOPDEN" alias="Population Density" unit="Population per Dwelling Unit" />
+        <featureattribute name="TOTJOBS" alias="Total Jobs" unit="Jobs per Acre" />
+        <featureattribute name="TOTSTUDENT" alias="Total Elementary Students" unit="Students per Acre" />
+        <featureattribute name="TOTVMT" alias="Total Vehicle Miles Traveled" unit="Miles per Year" />
+        <featureattribute name="TOTVHT" alias="Total Vehicle Hours Traveled" unit="Hours per Year" />
+        <featureattribute name="CO2EMIS" alias="Total CO2 Emission" unit="Total CO2 Emitted" />
+        <featureattribute name="WTRCONSUM" alias="Total Water Consumption" unit="Cubic Meters per Year" />
+	</featureattributes>
+
+	<!--
+		Color of labels on the pie chart
+		All values between #000000 - #FFFFFF are allowed.
+	-->
+	<labelcolor>#FFFFFF</labelcolor>
+
+	<!--
+		Text message to show when no data is present
+	-->
+	<errortext>No Data Available</errortext>
+
+	<!--
+		Label to display when plan present on the map doesn not have a name<noplanlabel>&lt;no planname&gt;</noplanlabel>
+	-->
+	<noplanlabel>&lt;Missing Plan Name&gt;</noplanlabel>
+
+	<!--
+		Label to indicate plan whose data is currently being shown in pie chart
+		NOTE: This label will be followed by planname
+	-->
+	<plannamelabelprefix>Plan Name:</plannamelabelprefix>
+
+	<!--
+		Attribute for plan name
+	-->
+	<plannameattribute>PLANNAME</plannameattribute>
+
+	<!--
+		Attribute for land use type
+	-->
+	<landusetypeattribute>LUTYPE</landusetypeattribute>
+
+</configuration>

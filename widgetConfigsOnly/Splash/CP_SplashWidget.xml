@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<configuration>
+    <!--
+        Refer to the doc below for valid HTML tags that can be used for the content
+        http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flashx/textLayout/conversion/TextConverter.html#TEXT_FIELD_HTML_FORMAT
+    -->
+  <width>375</width>
+  <height>310</height>
+  <content>
+    <![CDATA[<p align='center'>
+        <img src='assets/images/PL_logo.png' width='60' height='60' /><br><br>
+        <font size='18' color='#FFFFFF'><b>Community Planning</b></font><br>
+        <font size='14' color='#FFFFFF'><i>Your Plan for a Sustainable Community</i></font><br> 
+      </p>
+      <span style='MARGIN: 100px 100px 100px 100px'>
+        <textformat rightMargin='25' leftMargin='100'>The Community Planning application can be used by citizens and other interested parties to create, analyze, and share land use goals and aspirations for their community during a master planning process.<br><br>When you're done creating your plan, you can analyze how your design will impact public services, the environment, and community character. When you've completed your planning scenario, you can save it and share it with others via Email, Twitter, and Facebook.</textformat>
+      </span>
+      <br>
+          </p>
+    ]]>
+  </content>
+    <btnlabel>Continue</btnlabel>
+
+</configuration>
+
+<!--
+    See Splash widget tag reference at
+    http://links.esri.com/splashwidget
+-->

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   layout="absolute"
+				   creationComplete="communityWidgetOpenHandler(event)"
+				   widgetConfigLoaded="sharePlanConfigLoadedHandler(event)">
+
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade target="sharePlan"/>
+		</s:Transition>
+	</viewer:transitions>
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.TiledMapServiceLayer;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.utils.Hashtable;
+
+			import flash.external.ExternalInterface;
+
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.ListEvent;
+			import mx.skins.halo.WindowBackground;
+
+			import spark.components.Label;
+
+			private static var TINY_URL:String = 'http://tinyurl.com/api-create.php?url=';
+
+			private var tinyLoader:URLLoader = new URLLoader();
+			private var pageURL:String;
+
+			//Array containing ids of all feature layers added to map
+			private var arrFeatureLayerId:ArrayCollection;
+
+			//Strings containing currently loaded map service, plan name and email id which is shared
+			private var currentMap:String;
+			private var planName:String = "";
+			private var email:String;
+
+			private var noPlanLoadedErrorMessage:String;
+			private var noPlanLoadedErrorTitle:String;
+
+			private var popUpAlertMessage:String;
+			private var popUpAlertTitle:String;
+
+			private var strPlanNameField:String;
+			private var strEmailField:String;
+
+			[Bindable]private var shareDataArray:ArrayCollection = new ArrayCollection();
+
+			/**
+			 *
+			 * open handler for widget
+			 */
+			private function communityWidgetOpenHandler(event:Event):void
+			{
+				AppEvent.addListener(AppEvent.DATA_NEW_PUBLISHED, getLayerDataHandler);
+				AppEvent.addListener(AppEvent.DATA_SENT, getData);
+				fetchSharedData();
+			}
+
+			private function getLayerDataHandler(event:AppEvent):void
+			{
+				if(event.data.key == "CommunityPlanningLayers")
+				{
+					arrFeatureLayerId = (event.data.data as Hashtable).find("CommunityPlanningLayers") as ArrayCollection;
+				}
+			}
+
+			private function getData(event:AppEvent):void
+			{
+				AppEvent.removeListener(AppEvent.DATA_SENT, getData);
+				var data:Hashtable = event.data as Hashtable;
+
+				if(data.find("CommunityPlanningLayers"))
+				{
+					var featureLayer:FeatureLayer
+					arrFeatureLayerId = data.find("CommunityPlanningLayers") as ArrayCollection;
+				}
+			}
+
+			private function shareWidget(e:ListEvent):void
+			{
+				map.cursorManager.setBusyCursor();
+				for(var i:int = 0; i<map.layerIds.length; i++)
+				{
+					if(map.getLayer(map.layerIds[i]) is TiledMapServiceLayer)
+					{
+						if(map.layers[i].visible)
+						{
+							currentMap = map.layers[i].id;
+							break;
+						}
+					}
+				}
+				planName = "";
+				if(arrFeatureLayerId)
+				{
+					for(var j:int = 0;j<arrFeatureLayerId.length; j++)
+					{
+						var layer:FeatureLayer = map.getLayer(arrFeatureLayerId[j].id) as FeatureLayer;
+						if(layer.graphicProvider.source.length > 0)
+						{
+							planName = layer.graphicProvider.source[0].attributes[strPlanNameField];
+							email = layer.graphicProvider.source[0].attributes[strEmailField];
+							break;
+						}
+					}
+				}
+				if(planName != "")
+				{
+					pageURL = ExternalInterface.call("window.location.href.toString");
+					if(pageURL.indexOf("?") != -1)
+						pageURL = pageURL.slice(0,pageURL.indexOf("?"));
+					tinyLoader.load(new URLRequest(TINY_URL + pageURL + "?extent="
+						+ map.extent.xmin + " " + map.extent.ymin + " " + map.extent.xmax + " " + map.extent.ymax
+						+ "&id=" + currentMap + "&planname=" + planName + "&email=" + email));
+					tinyLoader.dataFormat = URLLoaderDataFormat.TEXT;
+					tinyLoader.addEventListener(Event.COMPLETE, tinyURL);
+				}
+				else
+				{
+					Alert.show(noPlanLoadedErrorMessage,noPlanLoadedErrorTitle);
+					shareList.selectedIndex = -1;
+					cursorManager.removeBusyCursor();
+				}
+			}
+
+			private function tinyURL(event:Event):void
+			{
+				var urlString:String = (shareDataArray.getItemAt(shareList.selectedIndex).link as String).replace("[sharedata]",encodeURIComponent(tinyLoader.data));
+				var x:Boolean = ExternalInterface.call("function(){var x;x = window.open('"+urlString+"','"+shareDataArray.getItemAt(shareList.selectedIndex).window.toString()+"');return (x) ? true : false;}");
+
+				if(!x)
+				{
+					Alert.show(popUpAlertMessage,popUpAlertTitle);
+				}
+
+				shareList.selectedIndex = -1;
+				map.cursorManager.removeBusyCursor();
+			}
+
+			/**
+			 *
+			 * Data from loaded config file is stored
+			 */
+			private function sharePlanConfigLoadedHandler(event:Event):void
+			{
+				var max:int = 0;
+				if (configXML)
+				{
+					for each(var xml:XML in configXML.shareoptions.shareoption)
+					{
+						if(xml.@windowoption.toString() == "self")
+							shareDataArray.addItem({"name":xml.@name.toString(),"link":xml.@link.toString(),"icon":xml.@icon.toString(),"window":"_self"});
+						else
+							shareDataArray.addItem({"name":xml.@name.toString(),"link":xml.@link.toString(),"icon":xml.@icon.toString(),"window":"_blank"});
+						if(max < measureText(xml.@name.toString()).width + 30)
+							max = measureText(xml.@name.toString()).width + 30;
+					}
+
+					noPlanLoadedErrorMessage = configXML.noplanloadederror.@message.toString();
+					noPlanLoadedErrorTitle = configXML.noplanloadederror.@title.toString();
+
+					popUpAlertMessage = configXML.popupmessage.@message.toString();
+					popUpAlertTitle = configXML.popupmessage.@title.toString();
+
+					strPlanNameField = configXML.plannameattribute.toString();
+					strEmailField = configXML.emailattribute.toString();
+				}
+			}
+
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<viewer:WidgetTemplate id="communityWidget"
+						   width="300" height="200"
+						   minWidth="300" minHeight="200"
+						   open="communityWidgetOpenHandler(event)">
+
+		<s:VGroup id="sharePlan" height="100%" width="100%" top="20">
+			<s:Label text="How do you want to share?" width="100%" />
+			<mx:List id="shareList" dataProvider="{shareDataArray}" labelField="name"
+					width="100%" height="100%" verticalAlign="middle" buttonMode="true"
+					itemRenderer="widgets.SharePlan.ShareListItemRenderer"
+					itemClick="shareWidget(event)" />
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+
+
+</viewer:BaseWidget>

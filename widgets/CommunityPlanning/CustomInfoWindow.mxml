@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:esri="http://www.esri.com/2008/ags"
+		 width="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:NumberFormatter id="numberFormatter" precision="2" useThousandsSeparator="true"  />
+	</fx:Declarations>
+
+	<s:layout>
+		<s:VerticalLayout verticalAlign="middle" horizontalAlign="left"
+						  paddingTop="5" paddingBottom="5"
+						  paddingLeft="5" paddingRight="5" />
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayList;
+
+			import spark.events.IndexChangeEvent;
+
+			//List containing all possible values of land use types
+			[Bindable]public var arrLandUseType:ArrayList = new ArrayList();
+
+			//List containing all data to be shown in info window
+			[Bindable]public var arrGraphicData:ArrayList = new ArrayList();
+
+			/**
+			 *
+			 * Dispatches event when land use type of selected graphic is changed
+			 */
+			private function landUseTypeListChangeHandler(event:IndexChangeEvent):void
+			{
+				this.dispatchEvent(new CommunityPlanningEvent(CommunityPlanningEvent.LAND_USE_TYPE_CHANGED,landUseTypeList.selectedItem));
+			}
+
+			/**
+			 *
+			 * Label function for data list showing attributes other than land use type
+			 */
+			private function infoListLabelFunction(item:Object):String
+			{
+				var str:String = numberFormatter.format(item.value).split(".")[1];
+				if(str == "00")
+				{
+					return item.label + " : " + numberFormatter.format(item.value).split(".")[0];
+				}
+				else
+				{
+					return item.label + " : " + numberFormatter.format(item.value);
+				}
+
+			}
+
+		]]>
+	</fx:Script>
+	<s:DropDownList id="landUseTypeList" width="200"
+					dataProvider="{arrLandUseType}" change="landUseTypeListChangeHandler(event)" />
+	<s:List id="dataList" dataProvider="{arrGraphicData}" width="100%"
+			labelFunction="{infoListLabelFunction}" />
+</s:Group>

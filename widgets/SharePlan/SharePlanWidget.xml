@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration>
+
+	<!--
+		Different options for sharing shown in the list
+		name: label displayed in the list
+		link: URL used for sharing data
+		icon: path for the icon shown in the list
+		windowoption: value indicating if new URL should open in same window or new window
+					valid values are 'new' for new window and 'self' for opening in same window
+		NOTE: In the link, '[sharedata]' will be replaced by the data to be shared
+	-->
+
+	<shareoptions>
+		<shareoption name="Twitter" windowoption="new"
+			link="http://twitter.com/home?status=Check out my Community Planning map: [sharedata]"
+			icon="widgets/SharePlan/assets/images/Twitter.png" />
+		<shareoption name="Facebook" windowoption="new"
+			link="http://www.facebook.com/sharer.php?u=[sharedata]&amp;t=Check out my Community Planning map"
+			icon="widgets/SharePlan/assets/images/Facebook.png" />
+		<shareoption name="Email" windowoption="self"
+			link="mailto:?subject=Check out my Community Planning map&amp;body=[sharedata]"
+			icon="widgets/SharePlan/assets/images/Email.png" />
+	</shareoptions>
+
+	<!--
+		Error message to show when no plan is loaded for sharing
+	-->
+
+	<noplanloadederror message="Please load a plan to share" title="Error" />
+
+	<!--
+		Alert message to show when pop-up blocker is enabled
+	-->
+
+	<popupmessage message="Please disable your pop-up blocker" title="Alert" />
+
+	<plannameattribute>PLANNAME</plannameattribute>
+	<emailattribute>EMAIL</emailattribute>
+
+</configuration>

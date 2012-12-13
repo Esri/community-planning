@@ -1,0 +1,1584 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   layout="absolute"
+				   xmlns:esri="http://www.esri.com/2008/ags"
+				   widgetConfigLoaded="widgetConfigLoadedHandler()"
+				   creationComplete="communityPlanningCreationCompleteHandler(event)"
+				   xmlns:CommunityPlanning="widgets.CommunityPlanning.*">
+
+
+	 <fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/halo";
+		@namespace esri "http://www.esri.com/2008/ags";
+		@namespace viewer "com.esri.viewer.*";
+
+		esri|TemplatePicker
+		{
+			skin-class: ClassReference("widgets.CommunityPlanning.CommunityPlanningWidgetTemplatePickerSkin");
+		}
+	</fx:Style>
+
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade target="resultsList" />
+		</s:Transition>
+	</viewer:transitions>
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.DrawEvent;
+			import com.esri.ags.events.EditEvent;
+			import com.esri.ags.events.LayerEvent;
+			import com.esri.ags.events.MapMouseEvent;
+			import com.esri.ags.events.TemplatePickerEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.geometry.Geometry;
+			import com.esri.ags.geometry.MapPoint;
+			import com.esri.ags.geometry.Polygon;
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.layers.TiledMapServiceLayer;
+			import com.esri.ags.renderers.SimpleRenderer;
+			import com.esri.ags.tasks.supportClasses.AreasAndLengthsParameters;
+			import com.esri.ags.tasks.supportClasses.AreasAndLengthsResult;
+			import com.esri.ags.tasks.supportClasses.ProjectParameters;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.ags.tools.DrawTool;
+			import com.esri.ags.tools.EditTool;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.utils.Hashtable;
+
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.core.UIComponentCachePolicy;
+			import mx.effects.effectClasses.HideShowEffectTargetFilter;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.Fault;
+			import mx.rpc.events.FaultEvent;
+			import mx.utils.StringUtil;
+
+			//Array containing all feature layers
+			[Bindable]private var featureLayers:Array;
+
+			//Array containing all constant values required for calculation
+			private var calculationArray:Array = [];
+
+			//Graphics layer used for adding newly drawn graphics before they are added to server
+			private var graphicsLayer:GraphicsLayer;
+
+			//Array used to store names of all added feature layers
+			private var arrfeatureLayerName:Array = [];
+
+			//Currently selected feature layer from template picker
+			private var selectedLayer:FeatureLayer;
+
+			//String containing result message of successful plan creation
+			private var strResult:String;
+
+			//Bollean value used to make error message visible
+			[Bindable]private var msgVisible:Boolean = false;
+
+			//Currently selected graphic
+			[Bindable]private var selectedGraphic:Graphic = null;
+
+			//Count indicating total number of queries fired
+			private var queryCount:int = 0;
+
+			//Count indicating total number of query results received
+			private var resultCount:int = 0;
+
+			//Array containing all attribute names which are calculated
+			private var arrAttributes:Array = [];
+
+			//Boolean value indicating successful creation of plan
+			private var isSuccess:Boolean = true;
+
+			//Array containing id and land use type of all feature layers, which is shared with other widgets
+			private var arrFeatureLayerId:ArrayCollection = new ArrayCollection();
+
+			//Associative array containing land use type of each layer
+			private var arrLandUseType:Array = [];
+
+			//Array containing all graphics marked for deletion
+			private var arrDeleteGraphic:Array = [];
+
+			//Name of currently loaded plan
+			private var currentPlanName:String = "";
+
+			//Email id of currently loaded plan
+			private var currentEmail:String = "";
+
+			//Boolean value indicating if loaded plan is updated
+			private var isUpdated:Boolean = false;
+
+			//Info window for selected graphic
+			private var infoWin:CustomInfoWindow = new CustomInfoWindow();
+
+			//Total count of features in submitted plan
+			private var totalResultCount:int = 0;
+
+			//Boolean value indicating if currently selected graphic is updated
+			private var isGeometryUpdated:Boolean = false;
+
+			//Error message to show when no plan name is entered
+			private var noPlanNameMessage:String;
+
+			//Error message to show when plan name is invalid
+			private var invalidPlanNameMessage:String;
+
+			//Error message to show when email id is invalid
+			private var invalidEmailMessage:String;
+
+			//Message to show when feature is edited
+			private var editFeatureMessage:String;
+
+			//Message to show when feature is added
+			private var addFeatureMessage:String;
+
+			//Message to show when plan is being saved
+			private var savePlanMessage:String;
+
+			//Message to show when application is loading
+			private var loadingMessage:String = "";
+
+			//Error message to  show when email id and plan name are not entered
+			private var noPlanEmailMessage:String;
+
+			//Error message to show when no feature are drawn for the plan
+			private var noFeatureDrawnMessage:String;
+
+			//Label for plan name text box
+			[Bindable]private var planNameLabel:String = "";
+
+			//Label for email id text box
+			[Bindable]private var emailLabel:String = "";
+
+			//Label for submit button
+			[Bindable]private var submitButtonLabel:String = "";
+
+			//Label for clear button
+			[Bindable]private var clearButtonLabel:String = "";
+
+			//Header for template picker
+			[Bindable]private var templatePickerHeader:String = "";
+
+			//Error message to show when no layer is loaded
+			private var noLayerErrorMessage:String = "";
+
+			//Title of alert box when no layer is loaded
+			private var noLayerErrorTitle:String = "";
+
+			//Error message to show when layer is not loaded properly
+			private var loadLayerErrorMessage:String = "";
+
+			//Title of alert box when layer is not loaded properly
+			private var loadLayerErrorTitle:String = "";
+
+			//Error message to show when plan is not loaded properly
+			private var loadPlanErrorMessage:String = "";
+
+			//Title of alert box when plan is not loaded properly
+			private var loadPlanErrorTitle:String = "";
+
+			//Confirmation message to show while clearing plan
+			private var clearConfirmationMessage:String = "";
+
+			//Title of alert box when plan is clearing
+			private var clearConfirmationTitle:String = "";
+
+			//Error message to show when plan is not saved properly
+			private var savePlanErrorMessage:String = "";
+
+			//Title of alert box when plan is not saved properly
+			private var savePlanErrorTitle:String = "";
+
+			//Error message to show when feature is not added properly
+			private var addFeatureErrorMessage:String = "";
+
+			//Title of alert box when feature is not added properly
+			private var addFeatureErrorTitle:String = "";
+
+			//Confirmation message when plan is updated
+			private var overwriteConfirmationMessage:String;
+
+			//Title of confirmation message when plan is updated
+			private var overwriteConfirmationTitle:String;
+
+			//Error message to show when plan name already exists
+			private var planExistsErrorMessage:String;
+
+			//Title of alert box when plan name already exists
+			private var planExistsErrorTitle:String;
+
+			//Message to show on successful submission of plan
+			private var successMessage:String;
+
+			//Boolean value indicating if plan name and email id are shown in success message
+			private var successHeader:Boolean;
+
+			//Boolean value indicating if layer details are shown in success message
+			private var successDetails:Boolean;
+
+			//Boolean value indicating if total count is shown in success message
+			private var successTotal:Boolean;
+
+			//Boolean value indicating if plan is being added or updated
+			private var isModified:Boolean = false;
+
+			//Boolean value indicating if plan name already exists
+			private var isExisting:Boolean = false;
+
+			//Array containing data to be shown in an infowindow
+			private var arrInfoWindowData:ArrayList = new ArrayList();
+
+			private var isSaving:Boolean = false;
+
+			private var strPlanNameField:String;
+			private var strEmailField:String;
+			private var strLastUpdateField:String;
+			private var strLandUseTypeField:String;
+			private var strShapeAreaField:String;
+
+			private function communityPlanningCreationCompleteHandler(event:FlexEvent):void
+			{
+				submitButton.addEventListener(MouseEvent.CLICK,submitButtonClickHandler);
+				AppEvent.addListener(AppEvent.DATA_NEW_PUBLISHED, newPlanLoaded);
+				infoWin.addEventListener(CommunityPlanningEvent.LAND_USE_TYPE_CHANGED,landUseTypeChangedHandler);
+				map.infoWindow.addEventListener(Event.CLOSE,infoWindowCloseHandler);
+			}
+
+			/**
+			 *
+			 * after info window is closed returns focus to map
+			 */
+			private function infoWindowCloseHandler(event:Event):void
+			{
+				map.setFocus();
+			}
+
+			/**
+			 *
+			 * saves plan details of newly loaded plan
+			 */
+			private function newPlanLoaded(event:AppEvent):void
+			{
+				if(event.data.key == "newPlanLoaded")
+				{
+					map.infoWindow.hide();
+					currentPlanName = txtPlanName.text = ((event.data.data as Hashtable).find("newPlanLoaded") as ArrayCollection).getItemAt(0).toString();
+					currentEmail = txtEMail.text = ((event.data.data as Hashtable).find("newPlanLoaded") as ArrayCollection).getItemAt(1).toString();
+					clearMessage();
+					isModified = false;
+					map.removeEventListener(MapMouseEvent.MAP_CLICK, mapClickEventHandler);
+				}
+			}
+
+			/**
+			 *
+			 * creates graphic layer and feature layers once config is loaded,
+			 * and shares them with other widgets
+			 *
+			 */
+			private function widgetConfigLoadedHandler():void
+			{
+				if (configXML)
+				{
+					loadingMessage = configXML.loadingmessage.toString();
+					showMessage(loadingMessage, true,false);
+					noPlanNameMessage = configXML.noplannamemessage.toString();
+					invalidPlanNameMessage = configXML.invalidplannamemessage.toString();
+					invalidEmailMessage = configXML.invalidemailmessage.toString();
+					editFeatureMessage = configXML.editfeaturemessage.toString();
+					addFeatureMessage = configXML.addfeaturemessage.toString();
+					savePlanMessage = configXML.saveplanmessage.toString();
+					noPlanEmailMessage = configXML.noplanemailmessage.toString();
+					noFeatureDrawnMessage = configXML.nofeaturedrawnerror.toString();
+
+					planNameLabel = configXML.plannamelabel.toString();
+					emailLabel = configXML.emaillabel.toString();
+
+					submitButtonLabel = configXML.submitbuttonlabel.toString();
+					clearButtonLabel = configXML.clearbuttonlabel.toString();
+
+					templatePickerHeader = configXML.templatepickerheader.toString();
+
+					noLayerErrorMessage = configXML.nolayererror.@message.toString();
+					noLayerErrorTitle = configXML.nolayererror.@title.toString();
+
+					loadLayerErrorMessage = configXML.loadlayererror.@message.toString();
+					loadLayerErrorTitle = configXML.loadlayererror.@title.toString();
+
+					loadPlanErrorMessage = configXML.loadplanerror.@message.toString();
+					loadPlanErrorTitle = configXML.loadplanerror.@title.toString();
+
+					clearConfirmationMessage = configXML.clearconfirmation.@message.toString();
+					clearConfirmationTitle = configXML.clearconfirmation.@title.toString();
+
+					savePlanErrorMessage = configXML.saveplanerror.@message.toString();
+					savePlanErrorTitle = configXML.saveplanerror.@title.toString();
+
+					addFeatureErrorMessage = configXML.addfeatureerror.@message.toString();
+					addFeatureErrorTitle = configXML.addfeatureerror.@title.toString();
+
+					overwriteConfirmationMessage = configXML.overwriteconfirmation.@message.toString();
+					overwriteConfirmationTitle = configXML.overwriteconfirmation.@title.toString();
+
+					planExistsErrorMessage = configXML.existingplanerror.@message.toString();
+					planExistsErrorTitle = configXML.existingplanerror.@title.toString();
+
+					graphicsLayer = new GraphicsLayer();
+					graphicsLayer.id = "communityPlanningGraphicsLayer";
+					graphicsLayer.addEventListener(MouseEvent.CLICK, graphicsLayerClickHandler);
+					map.addLayer(graphicsLayer);
+
+					geometryService.url = configXML.geometryservice.toString();
+					geometryService.method = URLRequestMethod.POST;
+
+					featureLayers = [];
+
+					successMessage = configXML.saveplansuccess.toString();
+					successDetails = configXML.successdetails.toString()=="true"?true:false;
+					successHeader = configXML.successheader.toString()=="true"?true:false;
+					successTotal = configXML.successtotal.toString()=="true"?true:false;
+
+					var arrConstants:Array = configXML.constants.toString().split(",");
+					for each(var xml:XML in configXML.operationallayers.layer)
+					{
+						if(xml.@url.toString() != "")
+						{
+							var featurelayer:FeatureLayer = new FeatureLayer();
+							featurelayer.url = xml.@url.toString();
+							featurelayer.id = xml.@label.toString();
+							featurelayer.name = xml.@label.toString();
+							featurelayer.mode = FeatureLayer.MODE_SELECTION;
+							featurelayer.outFields = ["*"];
+							featureLayers.push(featurelayer);
+							featurelayer.addEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+							queryCount++;
+							featurelayer.disableClientCaching = true;
+							featurelayer.addEventListener(LayerEvent.LOAD,layerLoadHandler);
+							featurelayer.addEventListener(LayerEvent.LOAD_ERROR,layerLoadErrorHandler);
+							map.addLayer(featurelayer);
+							arrFeatureLayerId.addItem({"id":featurelayer.id,"lutype":xml.@landusetype.toString()});
+							infoWin.arrLandUseType.addItem(xml.@landusetype.toString());
+							arrLandUseType[xml.@label.toString()] = xml.@landusetype.toString();
+
+							var obj:Object = {};
+
+							for(var i:int=0;i<arrConstants.length;i++)
+							{
+								obj[arrConstants[i]] = Number(xml.attribute(arrConstants[i]).toString());
+							}
+							calculationArray[featurelayer.id] = obj;
+						}
+						else
+						{
+							Alert.show(loadLayerErrorMessage.replace("[layername]",xml.@label.toString()),loadLayerErrorTitle);
+						}
+					}
+					if (featureLayers.length > 0)
+					{
+						templatePicker.featureLayers = featureLayers;
+						graphicsLayer.spatialReference = (featureLayers[0] as FeatureLayer).spatialReference;
+					}
+					else
+					{
+						clearMessage();
+						Alert.show(noLayerErrorMessage,noLayerErrorTitle);
+					}
+
+					//stores expresion for calculating attributes in an array
+					for each(var attributeXml:XML in configXML.calculationattributes.calculationattribute)
+					{
+						if(attributeXml.@exp.toString() != "")
+							arrAttributes.push({"name":attributeXml.@name.toString(),"exp":attributeXml.@exp.toString().split(" ")});
+						else
+							arrAttributes.push({"name":attributeXml.@name.toString(),"exp":null});
+					}
+
+					for each(var infoDataXml:XML in configXML.infowindowdata.data)
+					{
+						arrInfoWindowData.addItem({"label":infoDataXml.@label.toString(),"attribute":infoDataXml.@attribute.toString(),"value":null});
+					}
+
+					strPlanNameField = configXML.plannameattribute.toString();
+					strEmailField = configXML.emailattribute.toString();
+					strLandUseTypeField = configXML.landusetypeattribute.toString();
+					strLastUpdateField = configXML.lastupdateattribute.toString();
+					strShapeAreaField = configXML.shapeareaattribute.toString();
+
+				}
+				//addSharedData("CommunityPlanningLayers",arrFeatureLayerId);
+
+
+			}
+
+			/**
+			 *
+			 * error handler for layer load error event
+			 */
+			private function layerLoadErrorHandler(event:LayerEvent):void
+			{
+				Alert.show(loadLayerErrorMessage.replace("[layername]",event.layer.name),loadLayerErrorTitle);
+				resultCount++;
+				if(queryCount == resultCount)
+				{
+					clearMessage();
+				}
+			}
+
+			/**
+			 *
+			 * On successful search of plan, pans the map to location of selected plan
+			 * @param result Contains result of selectfeature operation
+			 */
+			private function onSearchSuccess(result:Object, token:Object = null):void
+			{
+				resultCount++;
+				if((result as Array).length > 0)
+				{
+					for each(var gra:Graphic in (result as Array))
+					{
+						gra.filters = [];
+					}
+				}
+				if(resultCount == queryCount)
+				{
+					resultCount = queryCount = 0;
+					currentPlanName = txtPlanName.text = token["pname"];
+					currentEmail = txtEMail.text = token["mail"];
+				}
+			}
+
+			/**
+			 *
+			 * Shows error message on failure to retrieve searched plan
+			 */
+			private function onSearchFail(fault:Object, token:Object = null):void
+			{
+				Alert.show(loadPlanErrorMessage.concat("\n" + fault.faultCode + " : " + fault.faultString),loadPlanErrorMessage);
+				clearMessage();
+			}
+
+			/**
+			 *
+			 * Handler for successful loading of featurelayer
+			 * once all layers are loaded, queries for plan if url contains shared information
+			 */
+			private function layerLoadHandler(event:LayerEvent):void
+			{
+				event.layer.removeEventListener(LayerEvent.LOAD,layerLoadHandler);
+				graphicsLayer.spatialReference = (featureLayers[0] as FeatureLayer).spatialReference;
+				arrfeatureLayerName[arrLandUseType[(event.layer as FeatureLayer).name]] = event.layer.id;
+				resultCount++;
+				if(queryCount == resultCount)
+				{
+					addSharedData("CommunityPlanningLayers",arrFeatureLayerId);
+					clearMessage();
+					var vars:URLVariables = new URLVariables();
+					var initialExtent:String;
+
+					try
+					{
+						if (ExternalInterface.available)
+						{
+							var search:String = ExternalInterface.call("location.search.substring", 1);
+							if (search && search.length > 0)
+							{
+								vars.decode(search);
+								if (vars["extent"])
+								{
+									var strExtent:String = vars["extent"];
+									var array:Array = strExtent.split(" ");
+									map.extent = new Extent(Number(array[0]),Number(array[1]),Number(array[2]),Number(array[3]));
+								}
+								if(vars["id"])
+								{
+									for(var k:int = 0; k< map.layerIds.length; k++)
+									{
+										if(map.getLayer(map.layerIds[k]) is TiledMapServiceLayer)
+										{
+											if(vars["id"] == map.layers[k].id)
+											{
+												(map.getLayer(map.layerIds[k]) as TiledMapServiceLayer).visible = true;
+											}
+											else
+											{
+												(map.getLayer(map.layerIds[k]) as TiledMapServiceLayer).visible = false;
+											}
+										}
+									}
+								}
+								if(vars["planname"].toString().toLowerCase() != "null" && vars["email"].toString().toLowerCase() != "null")
+								{
+									var query:Query = new Query();
+									query.where = strPlanNameField + "='" + vars["planname"] + "' AND " + strEmailField +"='" + vars["email"] + "'";
+									query.outSpatialReference = map.spatialReference;
+									for(var j:int = 0;j<arrFeatureLayerId.length; j++)
+									{
+										queryCount++;
+										var layer:FeatureLayer = map.getLayer(arrFeatureLayerId[j].id) as FeatureLayer;
+										layer.useAMF = false;
+										layer.selectFeatures(query, FeatureLayer.SELECTION_NEW, new AsyncResponder(onSearchSuccess, onSearchFail,{"pname":vars["planname"],"mail":vars["email"]}));
+									}
+								}
+							}
+						}
+					}
+					catch (error:Error)
+					{
+						Alert.show(error.message,error.name);
+					}
+				}
+
+			}
+
+			/**
+			 *
+			 * On selecting template, checks geometry type and activates drawtool
+			 * @param event Contains selected template
+			 */
+			private function selectedTemplateChangeHandler(event:TemplatePickerEvent):void
+			{
+				editTool.deactivate();
+				if(event.selectedTemplate)
+				{
+					graphicsLayer.removeEventListener(MouseEvent.CLICK, graphicsLayerClickHandler);
+					for each(var featureLayer:FeatureLayer in featureLayers)
+					{
+						featureLayer.removeEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+					}
+
+					selectedLayer = event.selectedTemplate.featureLayer;
+
+					switch(event.selectedTemplate.featureLayer.layerDetails.geometryType)
+					{
+
+						case Geometry.POLYGON:
+						{
+							if(event.selectedTemplate.featureLayer.renderer != null)
+							{
+								drawTool.fillSymbol = event.selectedTemplate.featureLayer.renderer.getSymbol(event.selectedTemplate.featureTemplate.prototype);
+							}
+							else if(event.selectedTemplate.featureLayer.symbol)
+							{
+								drawTool.fillSymbol = event.selectedTemplate.featureLayer.symbol;
+							}
+							drawTool.activate(DrawTool.POLYGON);
+						}
+					}
+				}
+			}
+
+			/**
+			 *
+			 * When user finishes drawing feature on the map, deactivates drawtool
+			 * and calls method to project drawn feature to featurelayers spatial reference
+			 */
+			private function drawEndHandler(event:DrawEvent):void
+			{
+				submitButton.removeEventListener(MouseEvent.CLICK,submitButtonClickHandler);
+				showMessage(addFeatureMessage,true,false);
+				drawTool.deactivate();
+				templatePicker.clearSelection();
+				selectedGraphic = event.graphic;
+				simplifyGraphic(selectedGraphic);
+			}
+
+			/**
+			 *
+			 * Simplifies drawn feature in case it is a malformed polygon
+			 */
+			private function simplifyGraphic(graphic:Graphic):void
+			{
+				selectedGraphic.attributes = new Object();
+				selectedGraphic.attributes[strLandUseTypeField] = arrLandUseType[(selectedLayer as FeatureLayer).name];
+				graphicsLayer.add(selectedGraphic);
+				geometryService.simplify([graphic.geometry],new AsyncResponder(onSimplifyComplete,onSimplifyFault));
+			}
+
+			/**
+			 *
+			 * On successful projection of selected feature, calls method to calculate shape area of feature
+			 */
+			private function onProjectComplete(result:Object,token:Object = null):void
+			{
+				if((result[0] as Polygon).rings.length > 0)
+				{
+					calculateArea(result[0] as Geometry);
+				}
+				else
+				{
+					clearMessage();
+					graphicsLayer.remove(selectedGraphic);
+					submitButton.addEventListener(MouseEvent.CLICK,submitButtonClickHandler);
+					//once all calculations are done make other features clickable
+					graphicsLayer.addEventListener(MouseEvent.CLICK, graphicsLayerClickHandler);
+					for each(var featureLayer:FeatureLayer in featureLayers)
+					{
+						featureLayer.addEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+					}
+				}
+			}
+
+			private function onProjectFault(fault:Fault,token:Object = null):void
+			{
+				Alert.show(addFeatureErrorMessage.concat("\n" + fault.faultCode + " : " + fault.faultString),addFeatureErrorTitle);
+				clearMessage();
+				submitButton.addEventListener(MouseEvent.CLICK,submitButtonClickHandler);
+				graphicsLayer.addEventListener(MouseEvent.CLICK, graphicsLayerClickHandler);
+				for each(var featureLayer:FeatureLayer in featureLayers)
+				{
+					featureLayer.addEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+				}
+			}
+
+			/**
+			 *
+			 * Projects drawn feature to corresponding featurelayers spatial reference
+			 */
+			private function onSimplifyComplete(result:Object,token:Object = null):void
+			{
+				if((result[0] as Polygon).rings.length > 0)
+				{
+					selectedGraphic.geometry = result[0] as Geometry;
+					var projParams:ProjectParameters = new ProjectParameters();
+					projParams.geometries = result as Array;
+					projParams.outSpatialReference = selectedLayer.spatialReference;
+					geometryService.project(projParams,new AsyncResponder(onProjectComplete,onProjectFault));
+				}
+				else
+				{
+					graphicsLayer.remove(selectedGraphic);
+					clearMessage();
+					submitButton.addEventListener(MouseEvent.CLICK,submitButtonClickHandler);
+					//once all calculations are done make other features clickable
+					graphicsLayer.addEventListener(MouseEvent.CLICK, graphicsLayerClickHandler);
+					for each(var featureLayer:FeatureLayer in featureLayers)
+					{
+						featureLayer.addEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+					}
+				}
+			}
+
+			private function onSimplifyFault(fault:Fault,token:Object = null):void
+			{
+				Alert.show(addFeatureErrorMessage.concat("\n" + fault.faultCode + " : " + fault.faultString),addFeatureErrorTitle);
+				clearMessage();
+				submitButton.addEventListener(MouseEvent.CLICK,submitButtonClickHandler);
+				graphicsLayer.addEventListener(MouseEvent.CLICK, graphicsLayerClickHandler);
+				for each(var featureLayer:FeatureLayer in featureLayers)
+				{
+					featureLayer.addEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+				}
+			}
+
+			/**
+			 *
+			 * Calculates area of the graphic
+			 * @param graphic Graphic drawn using drawtool
+			 */
+			private function calculateArea(geometry:Geometry):void
+			{
+
+				var areaParam:AreasAndLengthsParameters = new AreasAndLengthsParameters();
+				areaParam.polygons = [geometry];
+				geometryService.areasAndLengths(areaParam,new AsyncResponder(onCalculationSuccess,onCalculationFault,selectedGraphic));
+			}
+
+			private function onCalculationFault(fault:Fault,token:Object = null):void
+			{
+				Alert.show(addFeatureErrorMessage.concat("\n" + fault.faultCode + " : " + fault.faultString),addFeatureErrorTitle);
+				clearMessage();
+				submitButton.addEventListener(MouseEvent.CLICK,submitButtonClickHandler);
+				graphicsLayer.addEventListener(MouseEvent.CLICK, graphicsLayerClickHandler);
+				for each(var featureLayer:FeatureLayer in featureLayers)
+				{
+					featureLayer.addEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+				}
+			}
+
+			/**
+			 *
+			 * On calculation of shape area of graphic, other attributes are calculated
+			 * @param result Result of areaAndLengths operation
+			 * @param token Contains selected graphic
+			 */
+			private function onCalculationSuccess(result:AreasAndLengthsResult,token:Object = null):void
+			{
+				if(result.areas[0] > 0)
+				{
+					var resultValue:Number;
+					var currentGraphic:Graphic = token as Graphic;
+
+					var calculationObject:Object = calculationArray[arrfeatureLayerName[currentGraphic.attributes[strLandUseTypeField]]];
+					currentGraphic.attributes[strShapeAreaField] =  result.areas[0];
+					for(var i:int=0;i<arrAttributes.length;i++)
+					{
+						if(arrAttributes[i].exp)
+						{
+							var array:Array = arrAttributes[i].exp;
+
+							var value1:String;
+							var value2:String;
+							var num1:Number;
+							var num2:Number;
+							for(var j:int=0;j<(array.length - 1)/2;j++)
+							{
+								//for the first iteration, both values in expression are read
+								if(j==0)
+								{
+									value1 = array[j];
+									value2 = array[(2*j) + 2];
+									num1 = getNumber(value1,currentGraphic,calculationObject);
+									num2 = getNumber(value2,currentGraphic,calculationObject);
+								}
+									//for next iterations only second value is read
+									//and previously calculated value is assigned as first value
+								else
+								{
+									value2 = array[(2*j) + 2];
+									num1 = resultValue;
+									num2 = getNumber(value2,currentGraphic,calculationObject);
+								}
+								switch(array[(2*j) + 1])
+								{
+									case "+":
+										resultValue = num1 + num2;
+										break;
+									case "-":
+										resultValue = num1 - num2;
+										break;
+									case "*":
+										resultValue = num1 * num2;
+										break;
+									case "/":
+										resultValue = num1 / num2;
+										break;
+								}
+							}
+						}
+						currentGraphic.attributes[arrAttributes[i].name] = resultValue;
+					}
+					isUpdated = true;
+					isModified = true;
+					addSharedData("graphicChanged",new ArrayCollection());
+				}
+				else
+				{
+					graphicsLayer.remove(selectedGraphic);
+				}
+				clearMessage();
+				submitButton.addEventListener(MouseEvent.CLICK,submitButtonClickHandler);
+				//once all calculations are done make other features clickable
+				graphicsLayer.addEventListener(MouseEvent.CLICK, graphicsLayerClickHandler);
+				for each(var featureLayer:FeatureLayer in featureLayers)
+				{
+					featureLayer.addEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+				}
+			}
+
+
+
+			/**
+			 *
+			 * This method returns value of operands in the expression used to calculate feature attributes
+			 */
+			private function getNumber(str:String, graphic:Graphic,object:Object):Number
+			{
+				var num:Number;
+				if(str.charAt(0) == "[")//if value is attribute
+					num = Number(graphic.attributes[str.slice(1,str.length-1)]);
+				else if(str.charAt(0) == "(")//if value is constant
+					num = Number(object[str.slice(1,str.length-1)]);
+				else//if value is a number
+					num = Number(str);
+				return num;
+			}
+
+			/**
+			 *
+			 * On selection of graphic on graphicslayer
+			 * if 'ctrl' key is pressed, deletes the graphic
+			 * else activates edittool to enable editing
+			 */
+			private function graphicsLayerClickHandler(event:MouseEvent):void
+			{
+				var xMouse:Number = map.mouseX;
+				var yMouse:Number = map.mouseY + 40;
+				drawTool.deactivate();
+				if(selectedGraphic)
+					selectedGraphic.filters = [];
+				selectedGraphic = Graphic(event.target);
+				selectedGraphic.filters = [glow];
+				editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [selectedGraphic]);
+				selectedGraphic.addEventListener(FlexEvent.UPDATE_COMPLETE,graphicUpdateHandler);
+				map.addEventListener(KeyboardEvent.KEY_DOWN,deleteGraphicHandler);
+				map.addEventListener(MapMouseEvent.MAP_CLICK, mapClickEventHandler);
+				infoWin.landUseTypeList.selectedItem = selectedGraphic.attributes[strLandUseTypeField];
+				infoWin.arrGraphicData = new ArrayList();
+				for(var i:int = 0;i<arrInfoWindowData.length;i++)
+				{
+					arrInfoWindowData.getItemAt(i).value = selectedGraphic.attributes[arrInfoWindowData.getItemAt(i).attribute];
+				}
+				infoWin.arrGraphicData = arrInfoWindowData;
+				map.infoWindowContent = infoWin;
+				map.infoWindow.label = "Land Use Type";
+				map.infoWindow.show(map.toMapFromStage(xMouse, yMouse));
+			}
+
+			/**
+			 *
+			 * Deletes selected graphic on pressing delete button
+			 * if graphic is on graphicslayer it is removed
+			 * if it is on featurelayer it is made invisible and
+			 * added to array of graphics to be deleted
+			 */
+			private function deleteGraphicHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.DELETE)
+				{
+					if(selectedGraphic)
+					{
+						selectedGraphic.filters = [];
+						if(selectedGraphic.graphicsLayer is FeatureLayer)
+						{
+							if(arrDeleteGraphic[selectedLayer.name] == null)
+							{
+								arrDeleteGraphic[selectedLayer.name] = [];
+							}
+							(arrDeleteGraphic[selectedLayer.name] as Array).push(selectedGraphic);
+							selectedGraphic.visible = false;
+							selectedGraphic = null;
+							addSharedData("graphicChanged",new ArrayCollection());
+							map.infoWindow.hide();
+						}
+						else if(selectedGraphic.graphicsLayer is GraphicsLayer)
+						{
+							graphicsLayer.remove(selectedGraphic);
+							selectedGraphic = null;
+							map.infoWindow.hide();
+						}
+						isModified = true;
+						editTool.deactivate();
+					}
+				}
+			}
+
+			/**
+			 *
+			 * On selection of graphic on featurelayer
+			 * if 'ctrl' key is pressed, graphic is made invisible
+			 * and added to array of graphics to be deleted
+			 * else edittool is activated to enable editing
+			 */
+			private function featureLayerClickHandler(event:MouseEvent):void
+			{
+				var xMouse:Number = map.mouseX;
+				var yMouse:Number = map.mouseY + 40;
+				drawTool.deactivate();
+				if(selectedGraphic)
+					selectedGraphic.filters = [];
+				selectedGraphic = Graphic(event.target);
+				selectedLayer = event.currentTarget as FeatureLayer;
+				selectedGraphic.filters = [glow];
+				editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [selectedGraphic]);
+				selectedGraphic.addEventListener(FlexEvent.UPDATE_COMPLETE,graphicUpdateHandler);
+				map.addEventListener(KeyboardEvent.KEY_DOWN,deleteGraphicHandler);
+				map.addEventListener(MapMouseEvent.MAP_CLICK, mapClickEventHandler);
+				infoWin.landUseTypeList.selectedItem = selectedGraphic.attributes[strLandUseTypeField];
+				infoWin.arrGraphicData = new ArrayList();
+				for(var i:int = 0;i<arrInfoWindowData.length;i++)
+				{
+					arrInfoWindowData.getItemAt(i).value = selectedGraphic.attributes[arrInfoWindowData.getItemAt(i).attribute];
+				}
+				infoWin.arrGraphicData = arrInfoWindowData;
+				map.infoWindow.label = "Land Use Type";
+				map.infoWindowContent = infoWin;
+				map.infoWindow.show(map.toMapFromStage(xMouse, yMouse));
+			}
+
+			/**
+			 *
+			 * Update handler for selected graphic
+			 * sets the flag to indicate graphic has been updated
+			 */
+			private function graphicUpdateHandler(event:FlexEvent):void
+			{
+				isGeometryUpdated = true;
+			}
+
+			/**
+			 *
+			 * Edittool is deactivated to disable graphic updation
+			 * if graphic has been updated, it is simplified in case it is malformed polygon
+			 */
+			private function mapClickEventHandler(event:MapMouseEvent):void
+			{
+				map.removeEventListener(MapMouseEvent.MAP_CLICK, mapClickEventHandler);
+
+				map.infoWindow.hide();
+				if(selectedGraphic != null)
+				{
+					submitButton.removeEventListener(MouseEvent.CLICK,submitButtonClickHandler);
+					editTool.deactivate();
+					map.removeEventListener(KeyboardEvent.KEY_DOWN,deleteGraphicHandler);
+					selectedGraphic.removeEventListener(FlexEvent.UPDATE_COMPLETE,graphicUpdateHandler);
+					selectedGraphic.filters = [];
+
+					if(isGeometryUpdated)
+					{
+						showMessage(editFeatureMessage,true,false);
+						graphicsLayer.removeEventListener(MouseEvent.CLICK, graphicsLayerClickHandler);
+						for each(var featureLayer:FeatureLayer in featureLayers)
+						{
+							featureLayer.removeEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+						}
+						geometryService.simplify([selectedGraphic.geometry],new AsyncResponder(onSimplifyComplete,onSimplifyFault));
+						isUpdated = true;
+						isModified = true;
+						isGeometryUpdated = false;
+					}
+				}
+			}
+
+			/**
+			 *
+			 * On submit button click, plan name and email id are validated
+			 * if plan name is different than that of features on the map.
+			 * all features are added to new plan
+			 * else plan is updated
+			 */
+			private function submitButtonClickHandler(event:MouseEvent):void
+			{
+				var isLoadedPlan:Boolean = false;
+				if(!isSaving)
+				{
+					cursorManager.setBusyCursor();
+					isSaving = true;
+					map.infoWindow.hide();
+					if(txtEMail.text == "" && StringUtil.trim(txtPlanName.text) == "")
+					{
+						showMessage(noPlanEmailMessage,false,true);
+						isSaving = false;
+						cursorManager.removeBusyCursor();
+					}
+					else
+					{
+						var validationResultEvent:ValidationResultEvent = emailValidator.validate(txtEMail.text);
+						if(validationResultEvent.results == null)
+						{
+							if(txtPlanName.text != "")
+							{
+								if(StringUtil.trim(txtPlanName.text) != "")
+								{
+
+									var isFeatureDrawn:Boolean = false;
+									if((graphicsLayer.graphicProvider as ArrayCollection).length > 0)
+										isFeatureDrawn = true;
+									for(var i:int = 0;i<featureLayers.length;i++)
+									{
+										if(((featureLayers[i] as FeatureLayer).graphicProvider as ArrayCollection).length > 0)
+										{
+											isFeatureDrawn = true;
+											break;
+										}
+									}
+
+									if(isFeatureDrawn)
+									{
+										txtPlanName.text = StringUtil.trim(txtPlanName.text);
+										//isModified = false;
+										if(currentEmail == txtEMail.text && currentPlanName == txtPlanName.text)
+										{
+											for(var j:int = 0;j<featureLayers.length;j++)
+											{
+												if((featureLayers[j] as FeatureLayer).selectedFeatures.length > 0)
+												{
+													isLoadedPlan = true;
+													break;
+												}
+											}
+										}
+
+										if(isLoadedPlan)
+										{
+											cursorManager.removeBusyCursor();
+											if(isModified)
+											{
+												Alert.show(overwriteConfirmationMessage.replace("[planname]","'" + currentPlanName + "'"),overwriteConfirmationTitle,(Alert.YES | Alert.NO),null,confirmHandler);
+											}
+											else
+											{
+												isSaving = false;
+											}
+										}
+										else
+										{
+											//to check if given plan name already exists in database
+											queryCount = 0;
+											resultCount = 0;
+											var query:Query = new Query();
+											query.where = strEmailField + " = '" + txtEMail.text + "' AND " + strPlanNameField + " = '" + txtPlanName.text + "'";
+											for each(var featureLayer:FeatureLayer in featureLayers)
+											{
+												queryCount++;
+												featureLayer.queryIds(query,new AsyncResponder(onQueryIdComplete,onQueryIdFault));
+											}
+										}
+									}
+									else
+									{
+										showMessage(noFeatureDrawnMessage,false,true);
+										isSaving = false;
+										cursorManager.removeBusyCursor();
+									}
+								}
+								else
+								{
+									showMessage(invalidPlanNameMessage,false,true);
+									isSaving = false;
+									cursorManager.removeBusyCursor();
+								}
+							}
+							else
+							{
+								showMessage(noPlanNameMessage,false,true);
+								isSaving = false;
+								cursorManager.removeBusyCursor();
+							}
+						}
+						else
+						{
+							showMessage(invalidEmailMessage,false,true);
+							isSaving = false;
+							cursorManager.removeBusyCursor();
+						}
+					}
+				}
+
+			}
+
+			private function onQueryIdComplete(result:Object, token:Object = null):void
+			{
+				if((result as Array).length > 0)
+				{
+					isExisting = true;
+				}
+				resultCount++;
+				if(queryCount == resultCount)
+				{
+					if(isExisting)
+					{
+						isExisting = false;
+						Alert.show(planExistsErrorMessage,planExistsErrorTitle);
+						isSaving = false;
+						cursorManager.removeBusyCursor();
+					}
+					else
+					{
+						savePlan();
+					}
+				}
+			}
+
+			private function onQueryIdFault(fault:Fault,token:Object = null):void
+			{
+				Alert.show(savePlanErrorMessage.concat("\n" + fault.faultCode + " : " + fault.faultString),savePlanErrorTitle);
+				clearMessage();
+				resultCount++;
+				if(queryCount == resultCount)
+				{
+					isSaving = false;
+					cursorManager.removeBusyCursor();
+				}
+			}
+
+			/**
+			 *
+			 * Confirmation handler for plan overwrite
+			 * if user has selected yes method is called to update plan
+			 */
+			private function confirmHandler(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					savePlan();
+					cursorManager.setBusyCursor();
+				}
+				else
+				{
+					isSaving = false;
+					cursorManager.removeBusyCursor();
+				}
+			}
+
+			/**
+			 *
+			 * All drawn features are saved to server
+			 */
+			private function savePlan():void
+			{
+				showMessage(savePlanMessage,true,false);
+				var arrFeatureGraphicProvider:ArrayCollection = new ArrayCollection();
+				var arrGraphicProvider:ArrayCollection = (map.getLayer("communityPlanningGraphicsLayer") as GraphicsLayer).graphicProvider as ArrayCollection;
+				var i:int;
+				var j:int;
+				queryCount = 0;
+				resultCount = 0;
+				isModified = false;
+				isSuccess = true;
+				var arrayUpdateGraphic:Array;
+				var arrayAddGraphic:Array;
+
+				var graphic:Graphic;
+				for(i = 0;i<featureLayers.length;i++)
+				{
+					var date:Date = new Date();
+					arrayUpdateGraphic = null;
+					arrayAddGraphic = null;
+					arrFeatureGraphicProvider = (featureLayers[i] as FeatureLayer).graphicProvider as ArrayCollection;
+					if(arrFeatureGraphicProvider.length > 0)
+					{
+						for(j = 0;j<arrFeatureGraphicProvider.length;j++)
+						{
+							graphic = arrFeatureGraphicProvider[j] as Graphic;
+							if(graphic.visible)
+							{
+								graphic.attributes[strEmailField] = txtEMail.text;
+								graphic.attributes[strPlanNameField] = txtPlanName.text;
+								graphic.attributes[strLastUpdateField] = date;
+								//to check if graphics should be added or updated
+								if(currentPlanName == txtPlanName.text && currentEmail == txtEMail.text)
+								{
+									if(arrayUpdateGraphic == null)
+										arrayUpdateGraphic = [];
+									arrayUpdateGraphic.push(graphic);
+								}
+								else
+								{
+									if(arrayAddGraphic == null)
+										arrayAddGraphic = [];
+									arrayAddGraphic.push(graphic);
+								}
+
+							}
+						}
+					}
+					if(arrGraphicProvider.length > 0)
+					{
+						for(j = 0;j<arrGraphicProvider.length;j++)
+						{
+							graphic = arrGraphicProvider[j] as Graphic;
+							if(graphic.attributes[strLandUseTypeField] == arrLandUseType[(featureLayers[i] as FeatureLayer).name])
+							{
+								graphic.attributes[strEmailField] = txtEMail.text;
+								graphic.attributes[strPlanNameField] = txtPlanName.text;
+								graphic.attributes[strLastUpdateField] = date;
+								if(arrayAddGraphic == null)
+									arrayAddGraphic = [];
+								arrayAddGraphic.push(graphic);
+							}
+						}
+					}
+					if(arrayAddGraphic || arrayUpdateGraphic || (arrDeleteGraphic[(featureLayers[i] as FeatureLayer).name] as Array))
+					{
+						if(currentPlanName == txtPlanName.text && currentEmail == txtEMail.text)
+						{
+							(featureLayers[i] as FeatureLayer).applyEdits(
+								arrayAddGraphic, arrayUpdateGraphic, arrDeleteGraphic[(featureLayers[i] as FeatureLayer).name] as Array,
+								true, new AsyncResponder(onSubmitSuccess,onSubmitFault,(featureLayers[i] as FeatureLayer).id));
+							queryCount++;
+						}
+						else
+						{
+							if(arrayAddGraphic || arrayUpdateGraphic)
+							{
+								(featureLayers[i] as FeatureLayer).applyEdits(
+									arrayAddGraphic, arrayUpdateGraphic, null,
+									true, new AsyncResponder(onSubmitSuccess,onSubmitFault,(featureLayers[i] as FeatureLayer).id));
+								queryCount++;
+							}
+						}
+					}
+				}
+
+			}
+
+
+			private function onSubmitFault(fault:Fault,token:Object = null):void
+			{
+				Alert.show(savePlanErrorMessage.concat("\n" + fault.faultCode + " : " + fault.faultString),savePlanErrorTitle);
+				clearMessage();
+				resultCount++;
+				if(resultCount == queryCount)
+				{
+					isSaving = false;
+					cursorManager.removeBusyCursor();
+				}
+			}
+
+			/**
+			 *
+			 * On successfully saving plan to server
+			 * success message is displayed showing total number of features saved
+			 */
+			private function onSubmitSuccess(result:Object, token:Object = null):void
+			{
+				var resultArray:Array = (result.addResults as Array).concat(result.updateResults as Array);
+				if((result.updateResults as Array).length > 0)
+				{
+					isModified = true;
+				}
+				for(var i:int=0;i<resultArray.length;i++)
+				{
+					if(resultArray[i].success == false)
+					{
+						isSuccess = false;
+						break;
+					}
+				}
+
+				resultCount++;
+
+				if(resultCount == 1)
+				{
+					strResult = "";
+					if(successMessage != "")
+						strResult += successMessage + "\n\n";
+					if(successHeader)
+						strResult += "Plan Name: " + txtPlanName.text + "\n" + "Email Id: " + txtEMail.text + "\n";
+				}
+
+
+				var count:int = (result.addResults as Array).length + (result.updateResults as Array).length;
+				if(count > 0 && successDetails)
+					strResult += token.toString() + " : " + count.toString() + "\n";
+
+				totalResultCount += count;
+
+				if(resultCount == queryCount)
+				{
+					resultCount = 0;
+					queryCount = 0;
+					clearMessage();
+					if(isSuccess)
+					{
+						if(successTotal)
+							strResult += "\nTotal Features: " + totalResultCount;
+						if(isModified)
+						{
+							Alert.show(strResult,"Plan Updated");
+							isModified = false;
+						}
+						else
+						{
+							Alert.show(strResult,"Plan Submitted");
+						}
+						currentEmail = txtEMail.text;
+						currentPlanName = txtPlanName.text;
+						templatePicker.clearSelection();
+						arrDeleteGraphic = [];
+						addSharedData("newPlanCreated",new ArrayCollection([currentPlanName,currentEmail]));
+					}
+					else
+					{
+						Alert.show(savePlanErrorMessage,savePlanErrorTitle);
+					}
+					totalResultCount = 0;
+					isUpdated = false;
+					(map.getLayer("communityPlanningGraphicsLayer") as GraphicsLayer).clear();
+					var query:Query = new Query();
+					query.where = strPlanNameField + " = '" + txtPlanName.text.replace("'","''") + "' AND "+ strEmailField + " = '" + txtEMail.text + "'";
+					query.outFields = ["*"];
+					query.returnGeometry = true;
+					for each(var layer:FeatureLayer in featureLayers)
+					{
+						layer.useAMF = false;
+						queryCount++;
+						layer.selectFeatures(query,FeatureLayer.SELECTION_NEW,new AsyncResponder(onSelectSuccess,onSelectFault));
+					}
+				}
+			}
+
+			/**
+			 *
+			 * Success handler for selectfeature of recently added attributes
+			 */
+			private function onSelectSuccess(result:Object,token:Object = null):void
+			{
+				//remove glow effect from all selected graphics
+				for each(var gra:Graphic in (result as Array))
+				{
+					gra.filters = null;
+				}
+				resultCount++;
+				if(queryCount == resultCount)
+				{
+					isSaving = false;
+					cursorManager.removeBusyCursor();
+				}
+			}
+
+			/**
+			 *
+			 * Fault handler for save plan functionality
+			 */
+			private function onSelectFault(fault:Object, token:Object = null):void
+			{
+				Alert.show(loadPlanErrorMessage.concat("\n" + fault.faultCode + " : " + fault.faultString),loadPlanErrorMessage);
+				clearMessage();
+				resultCount++;
+				if(queryCount == resultCount)
+				{
+					isSaving = false;
+					cursorManager.removeBusyCursor();
+				}
+			}
+
+			/**
+			 *
+			 * Close handler for widget
+			 * clears all layers and messages
+			 */
+			private function communityWidgetClosedHandler(event:Event):void
+			{
+
+				for(var i:int=0;i<featureLayers.length;i++)
+				{
+					(featureLayers[i] as FeatureLayer).removeEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+				}
+				drawTool.deactivate();
+				editTool.deactivate();
+				if(selectedGraphic)
+				{
+					selectedGraphic.filters = [];
+					map.infoWindow.hide();
+				}
+			}
+
+			/**
+			 *
+			 * Shows busy message
+			 */
+			private function showMessage(msg:String, swfVisible:Boolean,isError:Boolean):void
+			{
+				txtMessage.text = msg;
+				if(isError)
+				{
+					txtMessage.setStyle("color","0xFFCC66");
+				}
+				else
+				{
+					txtMessage.setStyle("color","0xFFFFFF");
+				}
+				swfMessage.visible = swfVisible;
+				swfMessage.includeInLayout = swfVisible;
+				msgVisible = true;
+			}
+
+			/**
+			 *
+			 * Clears busy message
+			 */
+			private function clearMessage():void
+			{
+				msgVisible = false;
+			}
+
+			/**
+			 *
+			 * Open handler for widget
+			 * Adds listener for click event on all added feature layers
+			 */
+			private function communityWidgetOpenHandler(event:Event):void
+			{
+
+				if(featureLayers != null)
+				{
+					for(var i:int=0;i<featureLayers.length;i++)
+					{
+						(featureLayers[i] as FeatureLayer).addEventListener(MouseEvent.CLICK,featureLayerClickHandler);
+					}
+				}
+			}
+
+			/**
+			 *
+			 * On changing land use type of selected graphic
+			 * graphic symbol and attribute are changed
+			 */
+			private function landUseTypeChangedHandler(event:CommunityPlanningEvent):void
+			{
+				selectedGraphic.attributes[strLandUseTypeField] = event.dataObject;
+				for each(var obj:Object in arrFeatureLayerId)
+				{
+					if(obj.lutype == event.dataObject.toString())
+					{
+						selectedGraphic.symbol = ((map.getLayer(obj.id) as FeatureLayer).layerDetails.drawingInfo.renderer as SimpleRenderer).symbol;
+					}
+				}
+				addSharedData("graphicChanged",new ArrayCollection());
+				isUpdated = true;
+			}
+
+			/**
+			 *
+			 * Calls method to clear all layers
+			 */
+			private function clearPlanHandler(event:MouseEvent):void
+			{
+				if(isUpdated)
+				{
+					Alert.show(clearConfirmationMessage,clearConfirmationTitle,(Alert.YES|Alert.NO),null,confirmClearHandler);
+				}
+				else
+				{
+					clearPlan();
+				}
+
+			}
+
+			/**
+			 *
+			 * All layers are cleared and data structures are reset
+			 */
+			private function clearPlan():void
+			{
+				(map.getLayer("communityPlanningGraphicsLayer") as GraphicsLayer).clear();
+				for(var i:int=0;i<featureLayers.length;i++)
+				{
+					(featureLayers[i] as FeatureLayer).clearSelection();
+				}
+				drawTool.deactivate();
+				editTool.deactivate();
+				txtEMail.text = '';
+				txtPlanName.text = '';
+				clearMessage();
+				templatePicker.clearSelection();
+				arrDeleteGraphic = [];
+				isUpdated = false;
+				map.infoWindow.hide();
+				addSharedData("PlanCleared",new ArrayCollection());
+			}
+
+			/**
+			 *
+			 * Calls method to clear all layers
+			 */
+			private function confirmClearHandler(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					clearPlan();
+				}
+			}
+
+			/**
+			 *
+			 * Move handler for edit tool
+			 */
+			private function graphicsMoveHandler(event:EditEvent):void
+			{
+				map.infoWindow.hide();
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<esri:GeometryService id="geometryService" />
+		<esri:DrawTool id="drawTool"
+					   drawEnd="drawEndHandler(event)"
+					   map="{map}"/>
+		<esri:EditTool id="editTool" vertexMove="graphicsMoveHandler(event)"
+					   vertexAdd="graphicsMoveHandler(event)"
+					   vertexDelete="graphicsMoveHandler(event)"
+					   graphicsMove="graphicsMoveHandler(event)"
+					   map="{map}"/>
+		<mx:EmailValidator id="emailValidator" />
+		<s:GlowFilter id="glow" alpha="0.6" blurX="16" blurY="16" color="#FFFF00"
+					  inner="true" knockout="false" quality="1" strength="8" />
+
+	</fx:Declarations>
+
+	<CommunityPlanning:ExtendedWidgetTemplate id="communityWidget"
+						   width="300" height="350"
+						   minWidth="300" minHeight="350"
+						   open="communityWidgetOpenHandler(event)"
+						   closed="communityWidgetClosedHandler(event)">
+		<CommunityPlanning:layout>
+			<s:VerticalLayout paddingLeft="5" paddingTop="10"/>
+		</CommunityPlanning:layout>
+			<mx:Label text="{templatePickerHeader}" />
+
+				<s:BorderContainer height="100%" width="100%"
+								   backgroundAlpha="0.3" backgroundColor="0x666666"
+								   borderAlpha="1" borderColor="#000000"
+								   >
+					<esri:TemplatePicker id="templatePicker"
+										 height="100%" width="100%"
+										 buttonMode="true"
+										 selectedTemplateChange="selectedTemplateChangeHandler(event)"
+										/>
+				</s:BorderContainer>
+
+			<s:HGroup width="100%" horizontalAlign="left" verticalAlign="middle"  paddingTop="5">
+				<s:Label text="{planNameLabel}" width="70" />
+				<s:BorderContainer backgroundAlpha="0" borderColor="#000000" width="100%" height="22">
+					<s:TextInput id="txtPlanName" maxChars="150" width="100%" height="20" borderAlpha="0" />
+				</s:BorderContainer>
+			</s:HGroup>
+			<s:HGroup width="100%" horizontalAlign="left" verticalAlign="middle">
+				<s:Label text="{emailLabel}" width="70"/>
+				<s:BorderContainer backgroundAlpha="0" borderColor="#000000" width="100%" height="22">
+					<s:TextInput id="txtEMail" maxChars="100" width="100%" height="20" borderAlpha="0" />
+				</s:BorderContainer>
+			</s:HGroup>
+			<s:VGroup gap="3" width="100%">
+				<s:HGroup width="100%" horizontalAlign="center" paddingTop="5">
+					<s:Button id="submitButton" label="{submitButtonLabel}" color="#FFFFFF"
+							  buttonMode="true" />
+					<s:Button id="clearButton" label="{clearButtonLabel}"
+							  click="clearPlanHandler(event)" buttonMode="true" />
+				</s:HGroup>
+				<s:HGroup id="boxMessage"
+						  width="100%" verticalAlign="middle"
+						  visible="{msgVisible}">
+					<mx:Image id="swfMessage" height="17" width="17"
+							  source="widgets/CommunityPlanning/assets/images/loader.swf"
+							  visible="false"/>
+					<s:Label id="txtMessage"
+							 width="90%"
+							 text=""/>
+				</s:HGroup>
+			</s:VGroup>
+	</CommunityPlanning:ExtendedWidgetTemplate>
+</viewer:BaseWidget>

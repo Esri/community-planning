@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   layout="absolute"
+                   preinitialize="preinitializeHandler(event)"
+				   widgetConfigLoaded="widgetConfigLoadedHandler(event)">
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here-->
+		<mx:NumberFormatter id="numberFormatter" precision="2" useThousandsSeparator="true" />
+	</fx:Declarations>
+
+	<fx:Script><![CDATA[
+		import com.esri.ags.Graphic;
+		import com.esri.ags.events.FeatureLayerEvent;
+		import com.esri.ags.events.GraphicEvent;
+		import com.esri.ags.events.GraphicsLayerEvent;
+		import com.esri.ags.geometry.Polygon;
+		import com.esri.ags.layers.FeatureLayer;
+		import com.esri.ags.layers.GraphicsLayer;
+		import com.esri.ags.renderers.SimpleRenderer;
+		import com.esri.ags.symbols.SimpleFillSymbol;
+		import com.esri.viewer.AppEvent;
+		import com.esri.viewer.ViewerContainer;
+		import com.esri.viewer.utils.Hashtable;
+
+		import mx.charts.ChartItem;
+		import mx.collections.ArrayCollection;
+		import mx.collections.ArrayList;
+		import mx.graphics.IFill;
+		import mx.graphics.SolidColor;
+		import mx.graphics.SolidColorStroke;
+
+		import spark.events.IndexChangeEvent;
+
+		//Graphics layer containing newly created features
+		private var graphicLayer:GraphicsLayer;
+
+		//Array collection containing ids of operational layers
+		private var arrFeatureLayerId:ArrayCollection = new ArrayCollection();
+
+		//Array list containing all impact attributes shown in combo box
+		[Bindable]
+		private var arrComboBoxData:ArrayList = new ArrayList();
+
+		//Array of solid colors used in pie chart
+		private var arrSolidColor:Array = [];
+
+		//Array containing all data shown in the pie chart
+		[Bindable]
+		private var arrfeatureData:ArrayCollection = new ArrayCollection();
+
+		//Array containing data of features present on graphics layer
+		private var arrGraphicLayerData:Array = [];
+
+		//Array containing data of features present on feature layer
+		private var arrFeatureLayerData:Array = [];
+
+		//Color of labels shown in pie chart
+		private var strLabelColor:String;
+
+		//Message shown when there is no data present on the map
+		[Bindable]private var errorText:String;
+
+		//Label to shown when features on the map do not have a plan name
+		[Bindable]private var noPlaneNameLabel:String;
+
+		//Label to be displayed before plan name
+		private var planNameLabelPrefix:String;
+
+		private var strPlanNameField:String;
+		private var strLandUseTypeField:String;
+
+        // fix for embedded chart in 4.6
+        // by odejonge, http://forums.adobe.com/message/4143789
+        import mx.core.FlexGlobals;
+        import mx.events.FlexEvent;
+
+        protected function preinitializeHandler(event:FlexEvent):void
+        {
+            var styleObjects:Array = FlexGlobals.topLevelApplication.styleManager.selectors;
+            for each(var styleObj:String in styleObjects)  {
+                var style:CSSStyleDeclaration = FlexGlobals.topLevelApplication.styleManager.getStyleDeclaration(styleObj);
+                styleManager.setStyleDeclaration(styleObj, style, true);
+            }
+        }
+        // end fix
+
+		/**
+		 *
+		 * Saves information in config file
+		 * Gets graphics layer added to the map
+		 */
+		private function widgetConfigLoadedHandler(event:Event):void
+		{
+			if(configXML)
+			{
+				for each(var xml:XML in configXML.featureattributes.featureattribute)
+				{
+					arrComboBoxData.addItem({name:xml.@name.toString(),alias:xml.@alias.toString(),unit:xml.@unit.toString()});
+				}
+				strLabelColor = configXML.labelcolor.toString();
+				if(strLabelColor.length == 7)
+				{
+					strLabelColor = strLabelColor.replace("#","0x");
+				}
+				pieSeries.setStyle("color",uint(strLabelColor));
+
+				errorText = configXML.errortext.toString();
+				noPlaneNameLabel = configXML.noplanlabel.toString();
+				planNameLabelPrefix = configXML.plannamelabelprefix.toString();
+
+				strPlanNameField = configXML.plannameattribute.toString();
+				strLandUseTypeField = configXML.landusetypeattribute.toString();
+
+			}
+
+
+			AppEvent.addListener(AppEvent.DATA_NEW_PUBLISHED, receiveData);
+
+			AppEvent.addListener(AppEvent.DATA_SENT,getData);
+			fetchSharedData();
+		}
+
+		/**
+		 *
+		 * If any graphic has been updated
+		 * calls method to calculate statistics
+		 * and to display data on chart
+		 */
+		private function receiveData(event:AppEvent):void
+		{
+			if(event.data.key == "graphicChanged")
+			{
+				getGraphicLayerData();
+				getFeatureLayerData();
+				showFeatureData();
+			}
+			else if(event.data.key == "CommunityPlanningLayers")
+			{
+				arrFeatureLayerId = (event.data.data as Hashtable).find("CommunityPlanningLayers") as ArrayCollection;
+				if(arrFeatureLayerId)
+				{
+					getLayerData();
+				}
+			}
+		}
+
+		/**
+		 *
+		 * Clears statistics of graphicslayer
+		 * and calls method to display data on chart
+		 */
+		private function graphicLayerClearHandler(event:GraphicsLayerEvent = null):void
+		{
+			for(var i:int=0;i<arrFeatureLayerId.length;i++)
+			{
+				arrGraphicLayerData[(map.getLayer(arrFeatureLayerId.getItemAt(i).id) as FeatureLayer).name] = 0;
+			}
+			showFeatureData();
+		}
+
+		/**
+		 *
+		 * Clears statistics of featurelayer
+		 * and calls method to display data on chart
+		 */
+		private function featureLayerClearHandler(event:FeatureLayerEvent):void
+		{
+			arrFeatureLayerData[event.featureLayer.name] = 0;
+			showFeatureData();
+		}
+
+		/**
+		 *
+		 * removes statistics of removed graphic
+		 * and calls method to display data on chart
+		 */
+		private function graphicRemoveHandler(event:GraphicEvent):void
+		{
+			var graphic:Graphic = event.graphic;
+			if((graphic .geometry as Polygon).rings.length > 0)
+			{
+				for(var i:int = 0;i<arrFeatureLayerId.length;i++)
+				{
+					if((arrFeatureLayerId.getItemAt(i).lutype == graphic.attributes[strLandUseTypeField]) && graphic.attributes[arrComboBoxData.getItemAt(cbImpact.selectedIndex).name])
+					{
+						arrGraphicLayerData[arrFeatureLayerId.getItemAt(i).id] -= graphic.attributes[arrComboBoxData.getItemAt(cbImpact.selectedIndex).name];
+					}
+				}
+				showFeatureData();
+			}
+		}
+
+		/**
+		 *
+		 * Gets featurelayers added to the map
+		 * and calls methods to calculate and display statistics on chart
+		 */
+		private function getData(event:AppEvent):void
+		{
+			AppEvent.removeListener(AppEvent.DATA_SENT,getData);
+			if (event.data.key == "CommunityPlanningLayers")
+			{
+				arrFeatureLayerId = event.data.collection;
+				if(arrFeatureLayerId)
+				{
+					getLayerData();
+				}
+
+			}
+		}
+
+		private function getLayerData():void
+		{
+			var featureLayer:FeatureLayer;
+			for(var i:int = 0;i<arrFeatureLayerId.length;i++)
+			{
+				featureLayer = map.getLayer(arrFeatureLayerId.getItemAt(i).id.toString()) as FeatureLayer;
+				featureLayer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE,featureLayerOnSelectHandler);
+				featureLayer.addEventListener(FeatureLayerEvent.SELECTION_CLEAR,featureLayerClearHandler);
+				arrFeatureLayerData[featureLayer.name] = 0;
+				arrGraphicLayerData[featureLayer.name] = 0;
+				arrSolidColor.push(new SolidColor(((featureLayer.layerDetails.drawingInfo.renderer as SimpleRenderer).symbol as SimpleFillSymbol).color,1));
+			}
+			pieSeries.fillFunction = fillFunction;
+
+			graphicLayer = map.getLayer("communityPlanningGraphicsLayer") as GraphicsLayer;
+			graphicLayer.addEventListener(GraphicEvent.GRAPHIC_REMOVE,graphicRemoveHandler);
+			graphicLayer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR,graphicLayerClearHandler);
+
+			getFeatureLayerData();
+			getGraphicLayerData();
+			showFeatureData();
+		}
+
+		/**
+		 *
+		 * Fill function for pie chart
+		 */
+		private function fillFunction(item:ChartItem, index:Number):IFill
+		{
+			return (arrSolidColor[index] as SolidColor);
+		}
+
+		/**
+		 *
+		 * Calculates statistics of featurelayer
+		 * and calls method to display data on chart
+		 */
+		private function featureLayerOnSelectHandler(event:FeatureLayerEvent):void
+		{
+			var result:int = 0;
+			var arrGraphicProvider:ArrayCollection = event.featureLayer.graphicProvider as ArrayCollection;
+			for(var j:int=0;j<arrGraphicProvider.length;j++)
+			{
+				if(!isNaN((arrGraphicProvider[j] as Graphic).attributes[arrComboBoxData.getItemAt(cbImpact.selectedIndex).name]))
+				{
+					result += (arrGraphicProvider[j] as Graphic).attributes[arrComboBoxData.getItemAt(cbImpact.selectedIndex).name];
+				}
+			}
+			arrFeatureLayerData[event.featureLayer.name] = result;
+			showFeatureData();
+		}
+
+		/**
+		 *
+		 * Dispatches event to get featurelayers added to map
+		 */
+		override public function fetchSharedData():void
+		{
+			AppEvent.dispatch(AppEvent.DATA_FETCH, {key:"CommunityPlanningLayers"});
+		}
+
+		/**
+		 *
+		 * Shows statistical data of selected attribute on pie chart
+		 */
+		private function showFeatureData():void
+		{
+			arrfeatureData = new ArrayCollection();
+			var planName:String = "";
+			var isData:Boolean = false;
+			for(var i:int=0;i<arrFeatureLayerId.length;i++)
+			{
+				var featureLayer:FeatureLayer = map.getLayer(arrFeatureLayerId.getItemAt(i).id) as FeatureLayer;
+				if((featureLayer.graphicProvider as ArrayCollection).length > 0)
+					planName = (featureLayer.graphicProvider[0] as Graphic).attributes[strPlanNameField];
+				var total:Number = arrGraphicLayerData[featureLayer.name] + arrFeatureLayerData[featureLayer.name];
+				if(total > 0)
+					isData = true;
+				arrfeatureData.addItem({layerName:featureLayer.name,Result:total});
+			}
+			if(planName == "")
+			{
+				planNameTitleLabel.text = noPlaneNameLabel;
+				planNameTitleLabel.setStyle("fontWeight","normal");
+				planNameValueLabel.text = "";
+			}
+			else
+			{
+				planNameTitleLabel.text = planNameLabelPrefix;
+				planNameTitleLabel.setStyle("fontWeight","bold");
+				planNameValueLabel.text = planName;
+				planNameValueLabel.toolTip = planName;
+			}
+			if(isData)
+			{
+				pie.visible = true;
+				unitLabel.visible = true;
+				errorBox.visible = false;
+			}
+			else
+			{
+				errorBox.visible = true;
+				pie.visible = false;
+				unitLabel.visible = false;
+			}
+		}
+
+		/**
+		 *
+		 * Gets statistical data of selected attribute from all featurelayers
+		 */
+		private function getFeatureLayerData():void
+		{
+			var selectedAttribute:String = arrComboBoxData.getItemAt(cbImpact.selectedIndex).name;
+			var arrayCol:ArrayCollection = new ArrayCollection();
+			if(arrComboBoxData.getItemAt(cbImpact.selectedIndex).unit != "")
+				unitLabel.text = "Unit: " + arrComboBoxData.getItemAt(cbImpact.selectedIndex).unit;
+			else
+				unitLabel.text = "";
+			//features from all feature layers are collected together
+			for(var k:int=0;k<arrFeatureLayerId.length;k++)
+			{
+				arrFeatureLayerData[arrFeatureLayerId.getItemAt(k).id] = 0;
+				arrayCol.addAll((map.getLayer(arrFeatureLayerId.getItemAt(k).id) as FeatureLayer).graphicProvider as ArrayCollection);
+			}
+			//values of features are stored according to their land use type
+			//NOTE: user can change land use type of a feature or mark feature for deletion
+			//		hence before adding value of any feature first its land use type
+			//		and visibility needs to be checked
+			if(arrayCol.length > 0)
+			{
+				for(var i:int=0;i<arrayCol.length;i++)
+				{
+					var graphic:Graphic = arrayCol.getItemAt(i) as Graphic;
+					for(var j:int = 0;j<arrFeatureLayerId.length;j++)
+					{
+						if(arrFeatureLayerId.getItemAt(j).lutype == graphic.attributes[strLandUseTypeField] && graphic.visible && !isNaN(graphic.attributes[selectedAttribute]))
+						{
+							arrFeatureLayerData[arrFeatureLayerId.getItemAt(j).id] += graphic.attributes[selectedAttribute];
+						}
+					}
+				}
+			}
+		}
+
+		/**
+		 *
+		 * Gets statistical data of selected attribute from all graphicslayer
+		 */
+		private function getGraphicLayerData():void
+		{
+			for(var k:int=0;k<arrFeatureLayerId.length;k++)
+			{
+				arrGraphicLayerData[arrFeatureLayerId.getItemAt(k).id] = 0;
+			}
+			var arrayCol:ArrayCollection = graphicLayer.graphicProvider as ArrayCollection;
+			if(arrayCol.length > 0)
+			{
+				for(var i:int=0;i<arrayCol.length;i++)
+				{
+					var graphic:Graphic = arrayCol.getItemAt(i) as Graphic;
+					for(var j:int = 0;j<arrFeatureLayerId.length;j++)
+					{
+						if(arrFeatureLayerId.getItemAt(j).lutype == graphic.attributes[strLandUseTypeField])
+						{
+							arrGraphicLayerData[arrFeatureLayerId.getItemAt(j).id] += graphic.attributes[arrComboBoxData.getItemAt(cbImpact.selectedIndex).name];
+						}
+					}
+				}
+			}
+		}
+
+		/**
+		 *
+		 * On changing impact attribute
+		 * calls methods to calculate and display impact for selected attribute
+		 */
+		private function cbImpactChangeHandler(event:IndexChangeEvent):void
+		{
+			if(arrFeatureLayerId)
+			{
+				getFeatureLayerData();
+				getGraphicLayerData();
+				showFeatureData();
+			}
+		}
+
+		private function pieSeriesLabelFunction(item:Object, field:String, index:Number, percentValue:Number):String
+		{
+			var str:String = numberFormatter.format(item.Result).split(".")[1];
+			if(str == "00")
+			{
+				return numberFormatter.format(item.Result).split(".")[0];
+			}
+			else
+			{
+				return numberFormatter.format(item.Result);
+			}
+		}
+
+
+	]]></fx:Script>
+
+	<viewer:WidgetTemplate id="communityImpact"
+						   width="300" height="320"
+						   minWidth="300" minHeight="320">
+		<viewer:layout>
+			<s:VerticalLayout horizontalAlign="center" />
+		</viewer:layout>
+
+		<mx:HBox width="100%" horizontalAlign="center" paddingTop="10" left="0"
+				 horizontalScrollPolicy="off" verticalScrollPolicy="off" >
+			<s:Label id="planNameTitleLabel" text="{noPlaneNameLabel}" />
+			<s:Label id="planNameValueLabel" />
+		</mx:HBox>
+
+		<s:Group width="100%" height="100%">
+			<mx:PieChart id="pie"
+						 dataProvider="{arrfeatureData}"
+						 showDataTips="true" visible="false"
+						 dataTipRenderer="widgets.CommunityImpact.PieChartDataTipRenderer"
+						 width="100%" height="100%">
+				<mx:filters>
+					<s:DropShadowFilter
+						distance="7"
+						angle="45"
+						color="0x000000"
+						/>
+				</mx:filters>
+				<mx:series>
+					<mx:PieSeries id="pieSeries"
+								  explodeRadius="0.02"
+								  field="Result"
+								  labelPosition="callout"
+								  labelFunction="pieSeriesLabelFunction"
+								  >
+						<mx:calloutStroke>
+							<s:SolidColorStroke color="#FFFFFF" />
+						</mx:calloutStroke>
+					</mx:PieSeries>
+				</mx:series>
+			</mx:PieChart>
+			<mx:VBox id="errorBox" width="100%" height="100%"
+					 verticalAlign="middle" horizontalAlign="center">
+				<s:Label text="{errorText}" />
+			</mx:VBox>
+		</s:Group>
+
+		<s:HGroup width="100%" horizontalAlign="center" verticalAlign="middle">
+			<s:Label id="unitLabel" />
+		</s:HGroup>
+
+		<s:HGroup horizontalAlign="center" width="100%">
+			<s:DropDownList id="cbImpact" width="200" requireSelection="true"
+						dataProvider="{arrComboBoxData}" labelField="alias"
+						change="cbImpactChangeHandler(event)" />
+		</s:HGroup>
+	</viewer:WidgetTemplate>
+
+</viewer:BaseWidget>

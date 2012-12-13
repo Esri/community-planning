@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration>
+
+    <geometryservice>
+    	http://localgovtemplates2.esri.com/ArcGIS/rest/services/Geometry/GeometryServer
+    </geometryservice>
+
+    <!--
+    	List of constants used while calculating attributes
+    	NOTE: any changes made to constants name should be reflected everywhere in the config
+    -->
+    <constants>imperviouscoverage,effectiverainfallareaperacre,dwellingunitperacre,populationperdwellingunit,jobsperacre,studentsperacre,vehiclesmilesfactor,vehicleshoursfactor,co2emissionperperson</constants>
+
+    <!--
+    	Details of operational layers and values of constants for each layer
+    	NOTE: all values except that of landusetype can be changed by other values.
+    		  names of constants should match with those given in <constants> tag.
+    		  Value of landusetype for each layer is fixed and need to match with that in feature layer
+    -->
+	<operationallayers>
+
+		<layer label="Low Density Residential"
+				imperviouscoverage="0.3" effectiverainfallareaperacre="0.3"
+				dwellingunitperacre="3" populationperdwellingunit="3.5"
+				jobsperacre="5" studentsperacre="0.15" vehiclesmilesfactor="7650"
+				vehicleshoursfactor="248" co2emissionperperson="8.1"
+				landusetype="Low Density Residential"
+        alpha="0.75"
+				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/0" />
+
+		<layer label="Medium Density Residential"
+				imperviouscoverage="0.38" effectiverainfallareaperacre="0.38"
+				dwellingunitperacre="15" populationperdwellingunit="2.1"
+				jobsperacre="10" studentsperacre="0.15" vehiclesmilesfactor="7650"
+				vehicleshoursfactor="248" co2emissionperperson="8.1"
+				landusetype="Medium Density Residential"
+				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/1" />
+
+		<layer label="High Density Residential"
+				imperviouscoverage="0.65" effectiverainfallareaperacre="0.65"
+				dwellingunitperacre="30" populationperdwellingunit="2.1"
+				jobsperacre="15" studentsperacre="0.15" vehiclesmilesfactor="7650"
+				vehicleshoursfactor="248" co2emissionperperson="8.1"
+				landusetype="High Density Residential"
+				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/2" />
+
+		<layer label="Commercial"
+				imperviouscoverage="0.85" effectiverainfallareaperacre="0.85"
+				dwellingunitperacre="0" populationperdwellingunit="0"
+				jobsperacre="150" studentsperacre="0" vehiclesmilesfactor="0"
+				vehicleshoursfactor="0" co2emissionperperson="0"
+				landusetype="Commercial"
+				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/3" />
+
+		<layer label="Mixed Use"
+				imperviouscoverage="0.75" effectiverainfallareaperacre="0.75"
+				dwellingunitperacre="35" populationperdwellingunit="2.1"
+				jobsperacre="40" studentsperacre="0.15" vehiclesmilesfactor="7650"
+				vehicleshoursfactor="248" co2emissionperperson="8.1"
+				landusetype="Mixed Use"
+				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/4" />
+
+		<layer label="Industrial"
+				imperviouscoverage="0.72" effectiverainfallareaperacre="0.72"
+				dwellingunitperacre="0" populationperdwellingunit="0"
+				jobsperacre="350" studentsperacre="0" vehiclesmilesfactor="0"
+				vehicleshoursfactor="0" co2emissionperperson="0"
+				landusetype="Industrial"
+				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/5" />
+
+		<layer label="Institutional"
+				imperviouscoverage="0.75" effectiverainfallareaperacre="0.75"
+				dwellingunitperacre="0" populationperdwellingunit="0"
+				jobsperacre="25" studentsperacre="0" vehiclesmilesfactor="0"
+				vehicleshoursfactor="0" co2emissionperperson="0"
+				landusetype="Institutional"
+				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/6" />
+
+		<layer label="Open Space"
+				imperviouscoverage="0" effectiverainfallareaperacre="0"
+				dwellingunitperacre="0" populationperdwellingunit="0"
+				jobsperacre="0" studentsperacre="0" vehiclesmilesfactor="0"
+				vehicleshoursfactor="0" co2emissionperperson="0"
+				landusetype="Open Space"
+				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/7" />
+
+    </operationallayers>
+
+
+    <!--
+    	Names of attributes that are calculated after drawing feature on map
+    	along with arithmatic expressions to calculate them.
+    	NOTE: variables in square brackets are attributes of feature layer.
+    		  variables in round brackets are constants.
+    		  names of attributes should match with those on the feature server
+    		  names of constants should match with those given in <constants> tag.
+    -->
+    <calculationattributes>
+                <calculationattribute name="TOTAREA" exp= "[Shape.area] * 0.00002295702" />
+                <calculationattribute name="TOTIMPCOV" exp= "[TOTAREA] * (imperviouscoverage)" />
+                <calculationattribute name="TOTEFFRAIN" exp= "[TOTAREA] * (effectiverainfallareaperacre)" />
+                <calculationattribute name="TOTDWELLUN" exp= "[TOTAREA] * (dwellingunitperacre)" />
+                <calculationattribute name="TOTPOPDEN" exp= "[TOTDWELLUN] * (populationperdwellingunit)" />
+                <calculationattribute name="TOTJOBS" exp= "[TOTAREA] * (jobsperacre)" />
+                <calculationattribute name="TOTSTUDENT" exp= "[TOTAREA] * (studentsperacre)" />
+                <calculationattribute name="TOTVMT" exp= "[TOTAREA] * (vehiclesmilesfactor)" />
+                <calculationattribute name="TOTVHT" exp= "[TOTAREA] * (vehicleshoursfactor)" />
+                <calculationattribute name="CO2EMIS" exp= "[TOTPOPDEN] * (co2emissionperperson)" />
+                <calculationattribute name="WTRCONSUM" exp= "[TOTPOPDEN] * 80 * 365 * 0.003785412" />
+	</calculationattributes>
+
+	<!--
+		All messages that are shown while application is running
+		noplanemailmessage: error message to be displayed, when no plan name and email id is entered while saving plan
+		noplannamemessage: error message to be displayed, when no plan name is entered while saving plan
+		invalidplannamemessage: error message to be dsiplayed, when invalid plan name is entered while saving plan
+		invalidemailmessage: error message to be displayed, when no email id is entered while saving
+		nofeaturedrawnerror: error message to be displayed, when no feature is present on the map while saving
+		editfeaturemessage: message to be displayed, while feature is being edited
+		addfeaturemessage: message to be displayed, while feature is being added
+		loadingmessage: message to be displayed, while initial loading
+		saveplanmessage: message to be displayed, while plan is being saved
+	-->
+	<noplanemailmessage>Please Enter a Plan Name and Email Address</noplanemailmessage>
+	<noplannamemessage>Please Enter a Plan Name</noplannamemessage>
+	<invalidplannamemessage>Please Enter a Valid Plan Name</invalidplannamemessage>
+	<invalidemailmessage>Please Enter Valid Email Address</invalidemailmessage>
+	<nofeaturedrawnerror>Please add Land Use Features to the Map</nofeaturedrawnerror>
+
+	<editfeaturemessage>Editing Land Use Features</editfeaturemessage>
+	<addfeaturemessage>Adding Land Use Features</addfeaturemessage>
+	<loadingmessage>Loading...</loadingmessage>
+	<saveplanmessage>Saving Plan</saveplanmessage>
+
+
+
+	<!--
+		All error messages and confirmation messages that are shown in alert box
+		nolayererror: error message to show when no layer is found
+		loadlayererror: message to show when layer is not loaded properly
+		NOTE: while displaying message, [layername] will be replaced by layers name
+		loadplanerror: error message to show when plan is not loaded properly
+		clearconfirmation: confirmation message shown while closing widget
+		saveplanerror: error message to show when plan is not saved properly
+		overwriteconfirmation: confirmation message shown while updating plan
+		NOTE: while displaying message, [planname] will be replaced by actual plan name.
+		existingplanerror: error message shown when plan name already exists.
+		addfeatureerror: message to show when feature is not added properly
+	-->
+	<nolayererror message="No operational layers found" title="Error" />
+	<loadlayererror message="An unexpected error occured while loading '[layername]' layer" title="Error" />
+	<loadplanerror message="Error while loading plan data" title="Error" />
+	<clearconfirmation message="Are you sure you want to clear the feature(s) without saving?" title="Confirm" />
+	<saveplanerror message="An error ocurred while saving plan" title="Error" />
+	<overwriteconfirmation message="Do you want to save changes to [planname]?" title="Confirm" />
+	<existingplanerror message="Plan already exists. Please change the plan name and submit." title="Error" />
+	<addfeatureerror message="An error occured while adding feature." title="Error" />
+
+	<!--
+		Text to display on all the labels and buttons in the widget
+		plannamelabel: label for input box of plan name
+		emaillabel: label for input box of email id
+		submitbuttonlabel: label for submit button
+		clearbuttonlabel: label for clear button
+		templatepickerheader: label to describe template picker
+	-->
+	<plannamelabel>Plan Name </plannamelabel>
+	<emaillabel>Email Address </emaillabel>
+	<submitbuttonlabel>Submit My Plan</submitbuttonlabel>
+	<clearbuttonlabel>Clear</clearbuttonlabel>
+	<templatepickerheader>Select a Land Use Classification Below</templatepickerheader>
+
+	<!--
+		Message displayed on successful creation of plan
+		saveplansuccess: introductory text shown at the start of the success message
+		successheader: boolean value indicating if plan name and email id should be shown
+		successdetails: boolean value indicating if count of features added to each layer should be shown
+		successtotal: boolean value indicating if total number of features added should be shown
+	-->
+	<saveplansuccess>Thank you for participating in the Community Planning process</saveplansuccess>
+	<successheader>true</successheader>
+	<successdetails>false</successdetails>
+	<successtotal>false</successtotal>
+
+	<!--
+		Data shown in the infowindow
+		label: label shown in infowindow for each attribute
+		attribute: attribute value to be shown
+	-->
+	<infowindowdata>
+		<data label="Total Area" attribute="TOTAREA" />
+		<data label="Total Impervious Coverage" attribute="TOTIMPCOV" />
+		<data label="Total Effective Rainfall" attribute="TOTEFFRAIN" />
+		<data label="Total Dwelling Units" attribute="TOTDWELLUN" />
+		<data label="Population Density" attribute="TOTPOPDEN" />
+		<data label="Total Jobs" attribute="TOTJOBS" />
+		<data label="Total Elementary Students" attribute="TOTSTUDENT" />
+		<data label="Total Vehicle Miles Traveled" attribute="TOTVMT" />
+		<data label="Total Vehicle Hours Traveled" attribute="TOTVHT" />
+		<data label="Total CO2 Emission" attribute="CO2EMIS" />
+		<data label="Total Water Consumption" attribute="WTRCONSUM" />
+	</infowindowdata>
+
+	<!--
+		Attribute for plan name
+	-->
+	<plannameattribute>PLANNAME</plannameattribute>
+
+	<!--
+		Attribute for land use type
+	-->
+	<landusetypeattribute>LUTYPE</landusetypeattribute>
+
+	<!--
+		Attribute for email id
+	-->
+	<emailattribute>EMAIL</emailattribute>
+
+	<!--
+		Attribute for last updated date
+	-->
+	<lastupdateattribute>LASTUPDATE</lastupdateattribute>
+
+	<!--
+		Attribute for shape area
+	-->
+      <shapeareaattribute>Shape.area</shapeareaattribute>
+
+</configuration>

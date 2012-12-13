@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:viewer="com.esri.viewer.*"
+				   layout="absolute"
+				   creationComplete="creationCompleteHandler(event)"
+				   widgetConfigLoaded="reviewPlanWidgetConfigLoadedHandler(event)"
+				   xmlns:esri="http://www.esri.com/2008/ags">
+
+	<viewer:transitions>
+		<s:Transition autoReverse="true" toState="*">
+			<s:Fade target="resultsList"/>
+		</s:Transition>
+	</viewer:transitions>
+
+	<fx:Script>
+		<![CDATA[
+			import com.esri.ags.FeatureSet;
+			import com.esri.ags.Graphic;
+			import com.esri.ags.events.FeatureLayerEvent;
+			import com.esri.ags.geometry.Extent;
+			import com.esri.ags.layers.FeatureLayer;
+			import com.esri.ags.layers.GraphicsLayer;
+			import com.esri.ags.tasks.supportClasses.Query;
+			import com.esri.viewer.AppEvent;
+			import com.esri.viewer.ViewerContainer;
+			import com.esri.viewer.utils.Hashtable;
+
+			import flashx.textLayout.elements.TCYElement;
+
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.collections.Sort;
+			import mx.collections.SortField;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.Fault;
+
+			//Array collection containing ids of all operational layers
+			private var arrFeatureLayerId:ArrayCollection;
+			private var graphicsLayer:GraphicsLayer = new GraphicsLayer();
+
+			//array collection containing all plan names for a specific email id
+			[Bindable]private var arrPlan:ArrayCollection = new ArrayCollection();
+			//Unsorted array containing plan names
+			private var tempArrCol:ArrayCollection = new ArrayCollection();
+
+			//Flag value used to display validation error message
+			[Bindable]
+			private var msgVisible:Boolean = false;
+
+			//Counts to kep track of number of queries fired and responses received
+			private var queryCount:int = 0;
+			private var resultCount:int = 0;
+
+			//Extent of selected map
+			private var featureExtent:Extent;
+
+			//Attribute that is used while searching
+			private var searchAttribute:String = "";
+
+			//Attribute that is received as a result in search operation
+			private var resultAttribute:String = "";
+
+			//Selected plan name
+			private var planName:String;
+
+			//Email id searched
+			private var emailId:String;
+
+			//To indicate if selected plan contains any features
+			private var isFeatureAvailable:Boolean = false;
+
+			//Message to display when search operation returns no result
+			private var searchFailMessage:String;
+
+			//Message to display when email id is invalid
+			private var invalidEmailError:String;
+
+			//Message to display when no email id is entered
+			private var noEmailError:String;
+
+			//Message to display while selected plan is loading
+			private var loadingMessage:String;
+
+			[Bindable]private var emailLabel:String = "";
+			[Bindable]private var searchToolTip:String = "";
+
+			//Message to display when loading of selected plan fails
+			private var loadPlanErrorMessage:String;
+			private var loadPlanErrorTitle:String;
+
+			//Message to display when an error occurs in a search operation
+			private var searchErrorMessage:String;
+			private var searchErrorTitle:String;
+
+			//Message to display when search returns no result
+			private var noResultErrorMessage:String;
+			private var noResultErrorTitle:String;
+
+			//Message to display when no layer is loaded
+			private var noLayerErrorMessage:String;
+			private var noLayerErrorTitle:String;
+
+			//Message to display when no layer is intiated
+			private var noLayerInitiatedErrorMessage:String;
+			private var noLayerInitiatedErrorTitle:String;
+
+			//To check if map contains any unsaved plan or updated plan
+			private var isUpdated:Boolean = false;
+
+			//Confirm message to display when map contains unsaved plan
+			private var clearUnsavedPlanConfirmationMessage:String;
+			private var clearUnsavedPlanConfirmationTitle:String;
+
+			//Confirm message to display when map contains updated plan
+			private var clearUpdatedPlanConfirmationMessage:String;
+			private var clearUpdatedPlanConfirmationTitle:String;
+
+			/**
+			 *
+			 * Searches plans created by user
+			 */
+			private function searchRecords(event:MouseEvent = null):void
+			{
+				if(arrFeatureLayerId)
+				{
+					if(arrFeatureLayerId.length > 0)
+					{
+						showMessage(loadingMessage, true,false);
+						if(txtEMail.text != "")
+						{
+							var validationResultEvent:ValidationResultEvent = emailValidator.validate(txtEMail.text);
+							if(validationResultEvent.results == null)
+							{
+								emailId = txtEMail.text;
+								var layerQuery:Query = new Query();
+								layerQuery.where = searchAttribute + " = '" + txtEMail.text + "'";
+								layerQuery.outSpatialReference = map.spatialReference;
+								layerQuery.outFields = [resultAttribute];
+								tempArrCol = new ArrayCollection();
+								for(var i:int = 0;i<arrFeatureLayerId.length;i++)
+								{
+									var featureLayer:FeatureLayer = map.getLayer(arrFeatureLayerId.getItemAt(i).id.toString()) as FeatureLayer;
+									queryCount++;
+									featureLayer.useAMF = false;
+									featureLayer.disableClientCaching = true;
+									featureLayer.queryFeatures(layerQuery, new AsyncResponder(onSearchSuccess, onSearchFail));
+								}
+
+							}
+							else
+							{
+								showMessage(invalidEmailError, false,true);
+								arrPlan = null;
+							}
+						}
+						else
+						{
+							showMessage(noEmailError,false,true);
+							arrPlan = null;
+						}
+					}
+					else
+					{
+						Alert.show(noLayerErrorMessage,noLayerErrorTitle);
+					}
+				}
+				else
+				{
+					Alert.show(noLayerInitiatedErrorMessage,noLayerInitiatedErrorTitle);
+				}
+			}
+
+			/**
+			 *
+			 * On successful search, displayes searched plans in the list
+			 */
+			private function onSearchSuccess(featureSet:FeatureSet, token:Object = null):void
+			{
+				resultCount++;
+				var tempArray:ArrayList = new ArrayList(featureSet.features);
+				if(tempArray.length > 0)
+				{
+					var i:int = 0;
+					for(i=0;i<tempArray.length;i++)
+					{
+						if(!tempArrCol.contains((tempArray.getItemAt(i) as Graphic).attributes[resultAttribute]))
+						{
+							tempArrCol.addItem((tempArray.getItemAt(i) as Graphic).attributes[resultAttribute]);
+						}
+					}
+				}
+				if(resultCount == queryCount)
+				{
+					if(tempArrCol.length == 0)
+					{
+						showMessage(searchFailMessage,false,true);
+						arrPlan = null;
+					}
+					else
+					{
+						//list is sorted alphabetically
+						var sort:Sort= new Sort();
+						sort.fields = [new SortField(null,false,false)];
+						tempArrCol.sort = sort;
+						tempArrCol.refresh();
+						clearMessage();
+						arrPlan = tempArrCol;
+					}
+				}
+			}
+
+			/**
+			 *
+			 * Fault handler for query
+			 * Displayes error message if no plan is returned
+			 */
+			private function onSearchFail(fault:Object,token:Object = null):void
+			{
+				resultCount++;
+				if(resultCount == queryCount)
+				{
+					if(arrPlan.length == 0)
+						showMessage(searchFailMessage,false,true);
+				}
+				var eString:String = searchErrorMessage.concat("[errormessage]",(fault as Fault).faultCode + " : " + (fault as Fault).faultString);
+				Alert.show(eString,searchErrorTitle);
+			}
+
+			/**
+			 *
+			 * On selecting plan name from the list
+			 * query is fired to featurelayers to get features
+			 */
+			private function resultListChangeHandler(event:ListEvent):void
+			{
+				if(resultList.selectedItem)
+				{
+					if(isUpdated)
+					{
+						var updatedPlanName:String = "";
+						for(var i:int=0;i<arrFeatureLayerId.length;i++)
+						{
+							if(((map.getLayer(arrFeatureLayerId.getItemAt(i).id.toString()) as FeatureLayer).graphicProvider as ArrayCollection).length > 0)
+								updatedPlanName = ((map.getLayer(arrFeatureLayerId.getItemAt(i).id.toString()) as FeatureLayer).graphicProvider[0] as Graphic).attributes[resultAttribute];
+						}
+
+						if(updatedPlanName == "")
+						{
+							Alert.show(clearUnsavedPlanConfirmationMessage,clearUnsavedPlanConfirmationTitle,Alert.YES|Alert.NO,null,confirmationCloseHandler);
+						}
+						else
+						{
+							Alert.show(clearUpdatedPlanConfirmationMessage.replace("[planname]",updatedPlanName),clearUpdatedPlanConfirmationTitle.replace("[planname]",updatedPlanName),Alert.YES|Alert.NO,null,confirmationCloseHandler);
+						}
+					}
+					else
+					{
+						loadPlan();
+					}
+				}
+			}
+
+			private function confirmationCloseHandler(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					loadPlan();
+				}
+			}
+
+			private function loadPlan():void
+			{
+				busyBox.visible = true;
+				resultList.dispatchEvent(new ReviewPlanEvent(ReviewPlanEvent.PLAN_SELECTED,resultList.selectedItem.toString()));
+				featureExtent = null;
+				graphicsLayer.clear();
+				planName = resultList.selectedItem.toString();
+				queryCount = 0;
+				resultCount = 0;
+				var layerQuery:Query = new Query();
+				layerQuery.where = resultAttribute + " = '" + planName.replace("'","''") + "' AND "+ searchAttribute +" = '" + emailId + "'";
+				layerQuery.outSpatialReference = map.spatialReference;
+				for(var i:int=0;i<arrFeatureLayerId.length;i++)
+				{
+					queryCount++;
+					var featureLayer:FeatureLayer = map.getLayer(arrFeatureLayerId.getItemAt(i).id.toString()) as FeatureLayer;
+					featureLayer.disableClientCaching = true;
+					featureLayer.useAMF = false;
+					featureLayer.selectFeatures(layerQuery,FeatureLayer.SELECTION_NEW, new AsyncResponder(onSelectSuccess, onSelectFail));
+				}
+			}
+
+			/**
+			 *
+			 * On successful query,
+			 * extent of plan is calculated and set
+			 */
+			private function onSelectSuccess(result:Object,token:Object = null):void
+			{
+				resultCount++;
+				if((result as Array).length > 0)
+				{
+					isFeatureAvailable = true;
+					for each(var gra:Graphic in (result as Array))
+					{
+						gra.filters = null;
+						//extent for whole plan is calculated
+						if(!featureExtent)
+						{
+							featureExtent = gra.geometry.extent;
+						}
+						else
+						{
+							featureExtent = featureExtent.union(gra.geometry.extent);
+						}
+					}
+				}
+				if(resultCount == queryCount)
+				{
+					resultList.dispatchEvent(new ReviewPlanEvent(ReviewPlanEvent.PLAN_LOADED,resultList.selectedItem.toString()));
+					if(!isFeatureAvailable)
+					{
+						Alert.show(noResultErrorMessage,noResultErrorTitle);
+					}
+					else
+					{
+						map.extent = featureExtent.expand(1.5);
+					}
+					isFeatureAvailable = false;
+					//information about newly loaded plan is shared with other  widgets
+					addSharedData("newPlanLoaded",new ArrayCollection([planName,txtEMail.text]));
+					isUpdated = false;
+					busyBox.visible = false;
+				}
+				trace(result);
+			}
+
+			/**
+			 *
+			 * Fault handler for select plan query
+			 */
+			private function onSelectFail(fault:Object,token:Object = null):void
+			{
+				resultCount++;
+				var eString:String = loadPlanErrorMessage.concat((fault as Fault).faultCode + " : " + (fault as Fault).faultString);
+				Alert.show(eString,loadPlanErrorTitle);
+				trace(fault);
+			}
+
+			/**
+			 *
+			 * Close handler for widget
+			 */
+			private function reviewWidgetClosedHandler(event:Event):void
+			{
+				txtEMail.text = "";
+				clearMessage();
+				arrPlan = null;
+			}
+
+			/**
+			 *
+			 * This method dsiplayes error message or busy message
+			 * @param msg Message to be displayed
+			 * @param swfVisible Flag indicating if busy indicator should be shown
+			 * @param isError Flag indicating if message is an error message
+			 */
+			private function showMessage(msg:String, swfVisible:Boolean,isError:Boolean):void
+			{
+				txtMessage.text = msg;
+				swfMessage.visible = swfVisible;
+				swfMessage.includeInLayout = swfVisible;
+				msgVisible = true;
+				if(isError)
+				{
+					txtMessage.setStyle("color","0xFFCC66");
+				}
+				else
+				{
+					txtMessage.setStyle("color","0xFFFFFF");
+				}
+			}
+
+			/**
+			 *
+			 * Clears message that is currently displayed
+			 */
+			private function clearMessage():void
+			{
+				msgVisible = false;
+			}
+
+			/**
+			 *
+			 * Creation complete handler for widget
+			 * gets graphicslayr added to the map
+			 * and calls method to get featurelayers on the map
+			 */
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				AppEvent.addListener(AppEvent.DATA_SENT,getData);
+				AppEvent.addListener(AppEvent.DATA_NEW_PUBLISHED, clearPlanHandler);
+				fetchSharedData();
+			}
+
+			/**
+			 *
+			 * Clears selection of result list
+			 */
+			private function clearPlanHandler(event:AppEvent):void
+			{
+				if(event.data.key == "PlanCleared")
+				{
+					resultList.selectedIndex = -1;
+					isUpdated = false;
+				}
+				else if(event.data.key == "graphicChanged")
+				{
+					isUpdated = true;
+				}
+				else if(event.data.key == "newPlanCreated")
+				{
+					var createdPlan:String = ((event.data.data as Hashtable).find("newPlanCreated") as ArrayCollection).getItemAt(0).toString();
+					var createdEmail:String = ((event.data.data as Hashtable).find("newPlanCreated") as ArrayCollection).getItemAt(1).toString();
+					if(emailId == createdEmail)
+					{
+						if(resultList.selectedIndex != -1)
+						{
+							if(arrPlan.getItemAt(resultList.selectedIndex).toString() != createdPlan)
+							{
+								arrPlan.addItem(createdPlan);
+								arrPlan.refresh();
+								resultList.selectedIndex = arrPlan.getItemIndex(createdPlan);
+								resultList.scrollToIndex(resultList.selectedIndex);
+							}
+						}
+						else
+						{
+							if(arrPlan)
+							{
+								arrPlan.addItem(createdPlan);
+								arrPlan.refresh();
+								resultList.selectedIndex = 0;
+							}
+						}
+					}
+					else
+					{
+						resultList.selectedIndex = -1;
+					}
+				}
+				else if(event.data.key == "CommunityPlanningLayers")
+				{
+					arrFeatureLayerId = (event.data.data as Hashtable).find("CommunityPlanningLayers") as ArrayCollection;
+					if(arrFeatureLayerId)
+					{
+						getLayerData();
+					}
+				}
+			}
+
+			/**
+			 *
+			 * Gets featurelayers added to the map
+			 */
+			private function getData(event:AppEvent):void
+			{
+				AppEvent.removeListener(AppEvent.DATA_SENT,getData);
+				if (event.data.key == "CommunityPlanningLayers")
+				{
+
+					arrFeatureLayerId = event.data.collection;
+					if(arrFeatureLayerId)
+					{
+						getLayerData();
+					}
+				}
+			}
+
+			private function getLayerData():void
+			{
+				var featureLayer:FeatureLayer;
+				for(var i:int = 0;i<arrFeatureLayerId.length;i++)
+				{
+					featureLayer = map.getLayer(arrFeatureLayerId.getItemAt(i).id.toString()) as FeatureLayer;
+					featureLayer.addEventListener(FeatureLayerEvent.EDITS_COMPLETE,planSavedHandler);
+				}
+				graphicsLayer = map.getLayer("communityPlanningGraphicsLayer") as GraphicsLayer;
+				if((graphicsLayer.graphicProvider as ArrayCollection).length > 0)
+					isUpdated = true;
+			}
+
+			private function planSavedHandler(event:FeatureLayerEvent):void
+			{
+				isUpdated = false;
+			}
+
+			/**
+			 *
+			 * Dispatches event to get featurelayers on the map
+			 */
+			override public function fetchSharedData():void
+			{
+				AppEvent.dispatch(AppEvent.DATA_FETCH, {key:"CommunityPlanningLayers"});
+			}
+
+			/**
+			 *
+			 * On pressing enter, calls method to search for plan names
+			 */
+			private function txtEMailKeyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ENTER)
+				{
+					searchRecords();
+				}
+
+			}
+
+			/**
+			 *
+			 * Stores data from config file
+			 */
+			private function reviewPlanWidgetConfigLoadedHandler(event:Event):void
+			{
+				if(configXML)
+				{
+					searchAttribute = configXML.searchattribute.toString();
+					resultAttribute = configXML.resultattribute.toString();
+					searchFailMessage = configXML.searchfailmessage.toString();
+					noEmailError = configXML.noemailerror.toString();
+					invalidEmailError = configXML.invalidemailmessage.toString();
+					loadingMessage = configXML.loadingmessage.toString();
+
+					emailLabel = configXML.emaillabel.toString();
+					searchToolTip = configXML.searchtooltip.toString();
+
+					loadPlanErrorMessage = configXML.loadplanerror.@message.toString().replace(/\\n/g, "\n");
+					loadPlanErrorTitle = configXML.loadplanerror.@title.toString();
+
+					searchErrorMessage = configXML.searcherror.@message.toString().replace(/\\n/g, "\n");
+					searchErrorTitle = configXML.searcherror.@title.toString();
+
+					noResultErrorMessage = configXML.noresulterror.@message.toString().replace(/\\n/g, "\n");
+					noResultErrorTitle = configXML.noresulterror.@title.toString();
+
+					noLayerErrorMessage = configXML.nolayererror.@message.toString().replace(/\\n/g, "\n");
+					noLayerErrorTitle = configXML.nolayererror.@title.toString();
+
+					noLayerInitiatedErrorMessage = configXML.nolayerinitiatederror.@message.toString().replace(/\\n/g, "\n");
+					noLayerInitiatedErrorTitle = configXML.nolayerinitiatederror.@title.toString();
+
+					clearUnsavedPlanConfirmationMessage = configXML.clearunsavedplanconfirmation.@message.toString().replace(/\\n/g, "\n");
+					clearUnsavedPlanConfirmationTitle = configXML.clearunsavedplanconfirmation.@title.toString();
+					clearUpdatedPlanConfirmationMessage = configXML.clearupdatedplanconfirmation.@message.toString().replace(/\\n/g, "\n");
+					clearUpdatedPlanConfirmationTitle = configXML.clearupdatedplanconfirmation.@title.toString();
+				}
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:EmailValidator id="emailValidator" />
+	</fx:Declarations>
+
+	<viewer:WidgetTemplate id="reviewWidget"
+						   width="300" height="265"
+						   minWidth="300" minHeight="265"
+						   closed="reviewWidgetClosedHandler(event)">
+		<s:VGroup gap="1" width="100%" height="100%">
+			<s:HGroup width="100%" horizontalAlign="center" paddingBottom="2" paddingTop="2">
+				<mx:Label text="{emailLabel}" />
+				<s:BorderContainer backgroundAlpha="0" borderColor="#000000" width="100%" height="22">
+					<s:TextInput id="txtEMail" width="100%" maxChars="100" height="20" keyDown="txtEMailKeyDownHandler(event)" borderAlpha="0" />
+				</s:BorderContainer>
+				<mx:Image source="widgets/ReviewPlan/assets/images/go.png" click="searchRecords(event)"
+						  buttonMode="true" toolTip="{searchToolTip}" />
+			</s:HGroup>
+			<mx:Spacer height="5" />
+			<s:Group width="100%" height="100%">
+				<mx:List id="resultList" dataProvider="{arrPlan}" width="100%" height="100%"
+						 itemClick="resultListChangeHandler(event)"
+						 allowMultipleSelection="false" allowDragSelection="false"
+						 contentBackgroundColor="0x666666" contentBackgroundAlpha="0.3"
+						 itemRenderer="widgets.ReviewPlan.ReviewListItemRenderer"
+						 buttonMode="true"/>
+				<mx:VBox id="busyBox" width="100%" height="100%"
+						 backgroundColor="#000000" backgroundAlpha="0" visible="false" />
+			</s:Group>
+
+			<s:HGroup id="boxMessage" paddingTop="5"
+					  width="100%" verticalAlign="middle"
+					  visible="{msgVisible}">
+				<mx:Image id="swfMessage"
+						  source="widgets/ReviewPlan/assets/images/loader.swf"
+						  visible="false"/>
+				<s:Label id="txtMessage"
+						 width="90%"
+						 text=""/>
+			</s:HGroup>
+		</s:VGroup>
+	</viewer:WidgetTemplate>
+
+</viewer:BaseWidget>

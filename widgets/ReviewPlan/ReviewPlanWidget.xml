@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ | Version 10.1.1
+ | Copyright 2012 Esri
+ |
+ | Licensed under the Apache License, Version 2.0 (the "License");
+ | you may not use this file except in compliance with the License.
+ | You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ | Unless required by applicable law or agreed to in writing, software
+ | distributed under the License is distributed on an "AS IS" BASIS,
+ | WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ | See the License for the specific language governing permissions and
+ | limitations under the License.
+-->
+<configuration>
+	<!--
+		Attribute value used while searching
+	-->
+	<searchattribute>EMAIL</searchattribute>
+
+	<!--
+		Attribute value returned as a result
+	-->
+	<resultattribute>PLANNAME</resultattribute>
+
+	<!--
+		Error message to display when no result is returned
+	-->
+	<searchfailmessage>We did not find a plan associated with this email address</searchfailmessage>
+
+	<!--
+		Error message to display when validation for email fails
+	-->
+	<invalidemailmessage>A valid email address is required to search for a plan</invalidemailmessage>
+
+	<!--
+		Error message to display when no email is entered
+	-->
+	<noemailerror>Enter an email address to find a plan</noemailerror>
+
+	<!--
+		Message to display, while initial loading
+	-->
+	<loadingmessage>Loading...</loadingmessage>
+
+	<!--
+		Label for input box of email id
+	-->
+	<emaillabel>Email Address:</emaillabel>
+
+	<!--
+		Tool tip for search button
+	-->
+
+	<searchtooltip>Search Plans</searchtooltip>
+
+	<!--
+		Error message to display when some error occures while loading selected plan
+	-->
+	<loadplanerror message="An unexpected error occured while loading." title="Error" />
+
+	<!--
+		Error message to display when some error occures while searching
+	-->
+	<searcherror message="An unexpected error occured while searching." title="Error" />
+
+	<!--
+		Error message to display when selected plan contains no features
+	-->
+	<noresulterror message="No features found for this plan" title="Result" />
+
+	<!--
+		Error message to display when no layers are loaded
+	-->
+	<nolayererror message="No operational layers found" title="Error" />
+
+	<!--
+		Error message to display when no layers are initiated in Create My Plan widget
+	-->
+	<nolayerinitiatederror message="Please open Create My Plan widget and then search again." title="Error" />
+
+	<!--
+		clearunsavedplanconfirmation: confirmation message shown when new plan is selected while unsaved plan is present on map
+		clearupdatedplanconfirmation: confirmation message shown when new plan is selected while updated plan is present on map
+		NOTE: while displaying message, [planname] will be replaced by actual plan name of updated plan.
+	-->
+	<clearunsavedplanconfirmation message="There are unsaved features on map.\nAll changes will be lost if you add an existing plan to the map.\nAre you sure you want to continue?" title="Confirm" />
+	<clearupdatedplanconfirmation message="There are unsaved features in [planname].\nAll changes will be lost if you add an existing plan to the map.\nAre you sure you want to continue?" title="Confirm" />
+
+
+</configuration>
