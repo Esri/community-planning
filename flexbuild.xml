@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.1.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,6 @@
 -->
 <project default="main">
     <target name="main">
-        <fb.exportReleaseBuild project="__arcgis-viewer-flex-flexviewer-3.0-src" />
+        <fb.exportReleaseBuild project="__arcgis-viewer-flex-master" />
     </target>
 </project>
