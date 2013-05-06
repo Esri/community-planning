@@ -86,5 +86,5 @@ limitations under the License.
 A copy of the license is available in the repository's
 [license.txt](https://raw.github.com/Esri/community-planning/master/license.txt) file.
 
-[](Esri Tags: Local Government Community Planning)
+[](Esri Tags: Local-Government Local Government Community Planning)
 [](Esri Language: ActionScript)
