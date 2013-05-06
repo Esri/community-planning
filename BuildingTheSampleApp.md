@@ -15,7 +15,7 @@ These steps set up a Flash Builder workspace for this project and then save it i
 build process has fresh ingredients to fall back upon in the case of workspace corruption.
 
 1. Download Esri's
-[ArcGIS Viewer 3.2 for Flex](https://github.com/Esri/arcgis-viewer-flex/archive/master.zip)
+[ArcGIS Viewer 3.3 for Flex](https://github.com/Esri/arcgis-viewer-flex/archive/master.zip)
 from GitHub
 
 2. From the ArcGIS Viewer for Flex zip, extract its top-level folder into into your public-safety-cop folder
@@ -23,14 +23,14 @@ and add two underscores to the front of its name so that git will ignore it; dis
 instructions below, we'll assume that the top-level folder's name is "__arcgis-viewer-flex-master".
 
 3. Download Esri's
-[ArcGIS API 3.2 for Flex](http://www.esri.com/apps/products/download/index.cfm?fuseaction=download.main&downloadid=885)
+[ArcGIS API 3.3 for Flex](http://resources.arcgis.com/en/communities/flex-api/)
 from Esri
 
-4. From the ArcGIS API for Flex zip, extract the file ArcGIS_Flex\libs\agslib-3.2-2013-03-19.swc
+4. From the ArcGIS API for Flex zip, extract the file ArcGIS_Flex\libs\agslib-3.3-2013-04-24.swc
 into the __arcgis-viewer-flex-master\libs folder; discard the zip
 
 5. Start Flash Builder and specify the full path of the community-planning folder as your workspace
-(the workspace needs to be one folder level above the project (src) folder that we just created)
+(the workspace needs to be one folder level above the project (arcgis-viewer-flex-master) folder that we just created)
 
 6. Import a Flash Builder project, and choose the __arcgis-viewer-flex-master folder as your project
 folder; cancel the build if one starts automatically. It's OK if you get the warning that the project will be

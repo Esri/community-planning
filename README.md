@@ -49,12 +49,12 @@ on the ArcGIS Resource Center can guide you in the setup and configuration of th
 
 Learn more about Esri's [ArcGIS for Local Government maps and apps](http://resources.arcgis.com/en/communities/local-government/).
 
-Show me a list of other [Local Government GitHub repositories](https://github.com/search?q=username:esri+local+government).
+Show me a list of other [Local Government GitHub repositories](http://esri.github.io/#Local%2DGovernment).
 
 Additional [information and sample data](http://www.arcgis.com/home/item.html?id=92dd6a7f491f4353b3f5f8f13a10dd3f)
 are available for the application.
 
-This application uses the 3.0 version of
+This application uses the 3.3 version of
 [Esri's ArcGIS API for Flex](http://resources.arcgis.com/en/communities/flex-api/)
 and the 4.6 version of [Adobe's Flex SDK](http://www.adobe.com/devnet/flex/flex-sdk-download.html);
 see the ArcGIS API site for concepts, samples, and a reference for using the API to create mapping web sites.
