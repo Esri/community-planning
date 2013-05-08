@@ -49,7 +49,7 @@ on the ArcGIS Resource Center can guide you in the setup and configuration of th
 
 Learn more about Esri's [ArcGIS for Local Government maps and apps](http://resources.arcgis.com/en/communities/local-government/).
 
-Show me a list of other [Local Government GitHub repositories](http://esri.github.io/#Local%2DGovernment).
+Show me a list of other [Local Government GitHub repositories](http://esri.github.io/#Local-Government).
 
 Additional [information and sample data](http://www.arcgis.com/home/item.html?id=92dd6a7f491f4353b3f5f8f13a10dd3f)
 are available for the application.
