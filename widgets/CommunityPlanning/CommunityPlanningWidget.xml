@@ -17,9 +17,7 @@
 -->
 <configuration>
 
-    <geometryservice>
-    	http://localgovtemplates2.esri.com/ArcGIS/rest/services/Geometry/GeometryServer
-    </geometryservice>
+    <geometryservice>http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer</geometryservice>
 
     <!--
     	List of constants used while calculating attributes
@@ -42,7 +40,7 @@
 				vehicleshoursfactor="248" co2emissionperperson="8.1"
 				landusetype="Low Density Residential"
         alpha="0.75"
-				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/0" />
+				url="http://services.arcgis.com/b6gLrKHqgkQb393u/arcgis/rest/services/CommunityPlanningTryItLive/FeatureServer/0" />
 
 		<layer label="Medium Density Residential"
 				imperviouscoverage="0.38" effectiverainfallareaperacre="0.38"
@@ -50,7 +48,7 @@
 				jobsperacre="10" studentsperacre="0.15" vehiclesmilesfactor="7650"
 				vehicleshoursfactor="248" co2emissionperperson="8.1"
 				landusetype="Medium Density Residential"
-				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/1" />
+				url="http://services.arcgis.com/b6gLrKHqgkQb393u/arcgis/rest/services/CommunityPlanningTryItLive/FeatureServer/1" />
 
 		<layer label="High Density Residential"
 				imperviouscoverage="0.65" effectiverainfallareaperacre="0.65"
@@ -58,7 +56,7 @@
 				jobsperacre="15" studentsperacre="0.15" vehiclesmilesfactor="7650"
 				vehicleshoursfactor="248" co2emissionperperson="8.1"
 				landusetype="High Density Residential"
-				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/2" />
+				url="http://services.arcgis.com/b6gLrKHqgkQb393u/arcgis/rest/services/CommunityPlanningTryItLive/FeatureServer/2" />
 
 		<layer label="Commercial"
 				imperviouscoverage="0.85" effectiverainfallareaperacre="0.85"
@@ -66,7 +64,7 @@
 				jobsperacre="150" studentsperacre="0" vehiclesmilesfactor="0"
 				vehicleshoursfactor="0" co2emissionperperson="0"
 				landusetype="Commercial"
-				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/3" />
+				url="http://services.arcgis.com/b6gLrKHqgkQb393u/arcgis/rest/services/CommunityPlanningTryItLive/FeatureServer/3" />
 
 		<layer label="Mixed Use"
 				imperviouscoverage="0.75" effectiverainfallareaperacre="0.75"
@@ -74,7 +72,7 @@
 				jobsperacre="40" studentsperacre="0.15" vehiclesmilesfactor="7650"
 				vehicleshoursfactor="248" co2emissionperperson="8.1"
 				landusetype="Mixed Use"
-				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/4" />
+				url="http://services.arcgis.com/b6gLrKHqgkQb393u/arcgis/rest/services/CommunityPlanningTryItLive/FeatureServer/4" />
 
 		<layer label="Industrial"
 				imperviouscoverage="0.72" effectiverainfallareaperacre="0.72"
@@ -82,7 +80,7 @@
 				jobsperacre="350" studentsperacre="0" vehiclesmilesfactor="0"
 				vehicleshoursfactor="0" co2emissionperperson="0"
 				landusetype="Industrial"
-				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/5" />
+				url="http://services.arcgis.com/b6gLrKHqgkQb393u/arcgis/rest/services/CommunityPlanningTryItLive/FeatureServer/5" />
 
 		<layer label="Institutional"
 				imperviouscoverage="0.75" effectiverainfallareaperacre="0.75"
@@ -90,7 +88,7 @@
 				jobsperacre="25" studentsperacre="0" vehiclesmilesfactor="0"
 				vehicleshoursfactor="0" co2emissionperperson="0"
 				landusetype="Institutional"
-				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/6" />
+				url="http://services.arcgis.com/b6gLrKHqgkQb393u/arcgis/rest/services/CommunityPlanningTryItLive/FeatureServer/6" />
 
 		<layer label="Open Space"
 				imperviouscoverage="0" effectiverainfallareaperacre="0"
@@ -98,7 +96,7 @@
 				jobsperacre="0" studentsperacre="0" vehiclesmilesfactor="0"
 				vehicleshoursfactor="0" co2emissionperperson="0"
 				landusetype="Open Space"
-				url="http://localgovtemplates2.esri.com/ArcGIS/rest/services/Planning/CommunityPlanning/FeatureServer/7" />
+				url="http://services.arcgis.com/b6gLrKHqgkQb393u/arcgis/rest/services/CommunityPlanningTryItLive/FeatureServer/7" />
 
     </operationallayers>
 
