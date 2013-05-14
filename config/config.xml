@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- | Version 10.1.1
+ | Version 10.2
  | Copyright 2012 Esri
  |
  | Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@
     <!-- UI elements -->
     <splashpage label="ArcGIS Viewer for Flex" config="widgets/Splash/CP_SplashWidget.xml" url="widgets/Splash/SplashWidget.swf"/>
     <widget left="10"  top="50"    config="widgets/Navigation/PL_NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf"/>
-    <widget right="20" top="55"    config="widgets/MapSwitcher/MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf"/>
+    <widget right="20" top="55"    config="widgets/MapSwitcher/PL_MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf"/>
     <widget left="0"   top="0"     config="widgets/HeaderController/PL_HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/>
 
     <map wraparound180="true" initialextent="-9816892 5124514 -9812592 5127381" fullextent="-9816892 5124514 -9812592 5127381" top="40" addarcgisbasemaps="false">
