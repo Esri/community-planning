@@ -1,13 +1,9 @@
 <?xml version="1.0" ?>
 <configuration>
-    <!--
-        Refer to the doc below for valid HTML tags that can be used for the content
-        http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flashx/textLayout/conversion/TextConverter.html#TEXT_FIELD_HTML_FORMAT
-    -->
-  <width>375</width>
-  <height>310</height>
-  <content>
-    <![CDATA[<p align='center'>
+      <width>375</width>
+      <height>310</height>
+      <content>
+        <![CDATA[<p align='center'>
         <img src='assets/images/PL_logo.png' width='60' height='60' /><br><br>
         <font size='18' color='#FFFFFF'><b>Community Planning</b></font><br>
         <font size='14' color='#FFFFFF'><i>Your Plan for a Sustainable Community</i></font><br> 
@@ -18,11 +14,14 @@
       <br>
           </p>
     ]]>
-  </content>
-    <btnlabel>Continue</btnlabel>
-
+      </content>
+      <btnlabel>Continue</btnlabel>
 </configuration>
 
+<!--
+    For valid HTML tags in Flash applications (that can be used for 'content'), see
+    http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flashx/textLayout/conversion/TextConverter.html#TEXT_FIELD_HTML_FORMAT
+-->
 <!--
     See Splash widget tag reference at
     http://links.esri.com/splashwidget
