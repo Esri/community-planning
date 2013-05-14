@@ -1,10 +1,8 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <configuration>
-    <about>
-        <label>About</label>
-        <width>375</width>
-        <height>310</height>
-      <content>
+  <links>
+    <link label="About">
+      <content height="375" width="310" closelabel="Back to the Application">
         <![CDATA[ 
       <p align='center'>
         <font size='16' color='#FFFFFF'><b>Community Planning</b></font>
@@ -21,12 +19,13 @@
         </textformat>
         <br>
           <p>
-            (c) Copyright 2012 ESRI. All rights reserved.
+            (c) Copyright 2013 ESRI. All rights reserved.
           </p>
     ]]>
+      
       </content>
-      <btnlabel>Back to the Application</btnlabel>
-    </about>
+    </link>
+  </links>
 </configuration>
 
 <!--
