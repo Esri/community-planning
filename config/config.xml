@@ -31,7 +31,7 @@
         <alpha>0.8</alpha>
     </style>
     <!-- replace the following url with your own geometryservice -->
-    <geometryservice url="http://localgovtemplates.esri.com/ArcGIS/rest/services/Geometry/GeometryServer" />
+    <geometryservice url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer" />
 
     <!-- UI elements -->
     <splashpage label="ArcGIS Viewer for Flex" config="widgets/Splash/CP_SplashWidget.xml" url="widgets/Splash/SplashWidget.swf"/>
@@ -43,9 +43,9 @@
 
       <basemaps>
         <layer label="Parcel" type="tiled" visible="true" alpha="1"
-               url="http://localgovtemplates.esri.com/ArcGIS/rest/services/ParcelPublicAccess/MapServer"/>
+               url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/ParcelPublicAccess/MapServer"/>
         <layer label="Imagery" type="tiled" visible="false" alpha="1"
-               url="http://localgovtemplates.esri.com/ArcGIS/rest/services/ImageryHybrid/MapServer"/>
+               url="http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/ImageryHybrid/MapServer"/>
       </basemaps>
     </map>
 
