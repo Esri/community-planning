@@ -17,7 +17,7 @@
 -->
 <configuration>
 
-    <geometryservice>http://arcgis-tenone2012-1974758903.us-west-1.elb.amazonaws.com/arcgis/rest/services/Utilities/Geometry/GeometryServer</geometryservice>
+    <geometryservice>http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer</geometryservice>
 
     <!--
     	List of constants used while calculating attributes
