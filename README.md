@@ -6,7 +6,7 @@ create different implementation plans, evaluate their impact and shape the futur
 
 [Try the Community Planning application](http://localgovtemplates2.esri.com/communityplanning/index.html)
 
-[![Image of community planning](https://raw.github.com/Esri/community-planning/master/community-planning.png "community planning")](http://localgovtemplates2.esri.com/communityplanning/index.html)
+[![Image of community planning](community-planning.png "community planning")](http://localgovtemplates2.esri.com/communityplanning/index.html)
 
 ## Features
 
