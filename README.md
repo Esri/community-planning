@@ -1,12 +1,14 @@
 # community-planning
 
+***This Community Planning repo is no longer being monitored, applications built from this repo are in mature support***
+
 The Community Planning application can be used by citizens and other interested parties to create, analyze, and share
 land use goals and aspirations for their community during a master planning process. The application helps citizens
 create different implementation plans, evaluate their impact and shape the future of their community.
 
-[Try the Community Planning application](http://localgovtemplates2.esri.com/communityplanning/index.html)
+[Try the Community Planning application](http://tryitlive.arcgis.com/communityplanning/)
 
-[![Image of community planning](community-planning.png "community planning")](http://localgovtemplates2.esri.com/communityplanning/index.html)
+[![Image of community planning](community-planning.png "community planning")](http://tryitlive.arcgis.com/communityplanning/)
 
 ## Features
 
@@ -24,8 +26,8 @@ Esri's sample services can be used with this repository to extend the applicatio
 
 ### Your Services
 
-[Detailed help](http://resources.arcgis.com/en/help/localgovernment/10.1/index.html#/What_is_Community_Planning/028s00000019000000/)
-on the ArcGIS Resource Center can guide you in the setup and configuration of the app with your data.
+[Detailed help](http://solutions.arcgis.com/local-government/help/community-planning/)
+on the ArcGIS Solutions site can guide you in the setup and configuration of the app with your data.
 
 ### General Help
 [New to Github? Get started here.](http://htmlpreview.github.com/?https://github.com/Esri/esri.github.com/blob/master/help/esri-getting-to-know-github.html)
@@ -51,7 +53,7 @@ Learn more about Esri's [ArcGIS for Local Government maps and apps](http://solut
 
 Show me a list of other [Local Government GitHub repositories](http://esri.github.io/#Local-Government).
 
-Additional [information and sample data](http://www.arcgis.com/home/item.html?id=59649666fad84d61b76da9eff84b5ec0)
+Additional [information and sample data](http://solutions.arcgis.com/local-government/help/community-planning/)
 are available for the application.
 
 This application uses the 3.5 version of
