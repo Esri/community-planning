@@ -53,7 +53,7 @@ Learn more about Esri's [ArcGIS for Local Government maps and apps](http://solut
 
 Show me a list of other [Local Government GitHub repositories](http://esri.github.io/#Local-Government).
 
-Additional [information and sample data](http://solutions.arcgis.com/local-government/help/community-planning/)
+Additional [information](http://solutions.arcgis.com/local-government/help/community-planning/)
 are available for the application.
 
 This application uses the 3.5 version of
@@ -63,7 +63,7 @@ see the ArcGIS API site for concepts, samples, and a reference for using the API
 
 ## Issues
 
-Find a bug or want to request a new feature?  Please let us know by submitting an issue.
+Find a bug or want to request a new feature?  Please submit an issue. This Community Planning repo is no longer being monitored, applications built from this repo are in mature support
 
 ## Contributing
 
