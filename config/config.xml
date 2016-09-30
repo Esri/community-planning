@@ -43,9 +43,9 @@
 
       <basemaps>
         <layer label="Parcel" type="tiled" visible="true" alpha="1"
-               url="http://tryitlive.arcgis.com/arcgis/rest/services/GeneralPurpose/MapServer"/>
+               url="http://yourserver/arcgis/rest/services/GeneralPurpose/MapServer"/>
         <layer label="Imagery" type="tiled" visible="false" alpha="1"
-               url="http://tryitlive.arcgis.com/arcgis/rest/services/ImageryHybrid/MapServer"/>
+               url="http://yourserver/arcgis/rest/services/ImageryHybrid/MapServer"/>
       </basemaps>
     </map>
 
