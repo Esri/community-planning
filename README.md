@@ -6,9 +6,7 @@ The Community Planning application can be used by citizens and other interested 
 land use goals and aspirations for their community during a master planning process. The application helps citizens
 create different implementation plans, evaluate their impact and shape the future of their community.
 
-[Try the Community Planning application](http://tryitlive.arcgis.com/communityplanning/)
-
-[![Image of community planning](community-planning.png "community planning")](http://tryitlive.arcgis.com/communityplanning/)
+[![Image of community planning](community-planning.png "community planning")]
 
 ## Features
 
@@ -20,10 +18,6 @@ Widgets
 
 ## Instructions
 
-### Esri Sample Services
-
-Esri's sample services can be used with this repository to extend the application.
-
 ### Your Services
 
 [Detailed help](http://solutions.arcgis.com/local-government/help/community-planning/)
@@ -33,8 +27,6 @@ on the ArcGIS Solutions site can guide you in the setup and configuration of the
 [New to Github? Get started here.](http://htmlpreview.github.com/?https://github.com/Esri/esri.github.com/blob/master/help/esri-getting-to-know-github.html)
 
 ## Requirements
-
-### Esri Sample Services
 
 * Microsoft ASP.NET Framework 4.0 available from the [Microsoft website](http://www.microsoft.com/en-us/download/details.aspx?id=17851)
 * Adobe Flash Player Plug-in - [About](http://get.adobe.com/flashplayer/)
